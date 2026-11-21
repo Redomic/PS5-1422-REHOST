@@ -15,7 +15,7 @@ with the device models (§3):
 ln -s <qemu-8.2.2>/pc-bios harness/boot/bios
 
 export PS5_KERNEL_RAW=/path/to/your/kernel_raw_1422.bin
-export QEMU=<qemu-8.2.2>/build/qemu-system-x86_64
+export QEMU=<qemu-8.2.2>/build/qemu-system-x86_64-hvmodel
 cd harness/boot && bash session157r6.sh
 ```
 
@@ -61,29 +61,35 @@ the image, a download for it, or a way to extract one.
 
 ## 3. Build QEMU with the device models
 
-The boot needs a QEMU 8.2.2 that presents the platform the kernel probes for. The worked,
-shippable model is the HPET southbridge:
+The baseline boot needs a QEMU 8.2.2 that presents the platform the kernel probes for. Two pieces,
+both in `harness/qemu-device-models/`:
+
+- **`aeolia_hpet.c`** — the HPET southbridge, needed to reach device configuration.
+- **`hvmodel.patch`** — three source edits that model the PSP mailbox and the boot-reached
+  hypervisor calls, so the kernel's own code drives them (this is what the 62-patch baseline runs
+  on). Full notes: [`../harness/qemu-device-models/hvmodel.md`](../harness/qemu-device-models/hvmodel.md).
 
 ```sh
 # extract qemu-8.2.2 source, then:
-cp harness/qemu-device-models/aeolia_hpet.c  <qemu-8.2.2>/hw/misc/
-# register it: append to <qemu-8.2.2>/hw/misc/meson.build
-#   system_ss.add(files('aeolia_hpet.c'))
 cd <qemu-8.2.2>
+patch -p1 < <repo>/harness/qemu-device-models/hvmodel.patch
+cp <repo>/harness/qemu-device-models/aeolia_hpet.c  hw/misc/
+# register the HPET model: append to hw/misc/meson.build
+#   system_ss.add(files('aeolia_hpet.c'))
 ./configure --target-list=x86_64-softmmu --enable-debug
 ninja -C build qemu-system-x86_64
+cp build/qemu-system-x86_64 build/qemu-system-x86_64-hvmodel   # keep stock QEMU too
 ```
 
-`harness/qemu-device-models/INTEGRATION.md` has the full integration notes. The remaining models
-(the `vmmcall` hypercall path and the PSP mailbox MMIO device) are described per-synthetic in
-[`synthetic-register.md`](synthetic-register.md) and are built into the same QEMU the same way;
-the HPET model is included in full as the reference implementation of the technique.
-
-Point the harness at the build:
+Point the harness at the model build:
 
 ```sh
-export QEMU=<qemu-8.2.2>/build/qemu-system-x86_64
+export QEMU=<qemu-8.2.2>/build/qemu-system-x86_64-hvmodel
 ```
+
+`INTEGRATION.md` has the HPET integration notes. Note that a rebuilt QEMU binary will **not**
+hash-match the one that produced the published logs — QEMU C builds are not bit-reproducible — so
+verify the build by booting (§6), not by checksum.
 
 ## 4. Build the static index (optional but recommended)
 

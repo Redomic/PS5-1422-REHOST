@@ -1,0 +1,83 @@
+diff -ruN orig/hw/i386/pc_q35.c new/hw/i386/pc_q35.c
+--- orig/hw/i386/pc_q35.c	2026-11-21 21:58:51.223648396 +0530
++++ new/hw/i386/pc_q35.c	2026-11-21 21:58:51.232065313 +0530
+@@ -117,6 +117,30 @@
+ }
+ 
+ /* PC hardware initialisation */
++/* hvmodel (L-441): PSP mailbox status-register model. The PS5 kernel's
++   psp_mbox_send polls a single MMIO status register at physical 0xfdc10570
++   (bit31 = ready/valid, bits16-23 = busy). Return 0x80000000 (ready, not
++   busy, done); accept and ignore writes; the response buffer is left
++   kernel-zeroed = success, so the kernel's own mailbox driver runs
++   end-to-end against the model. */
++#define PS5_PSPMBOX_ADDR  0xfdc10570ULL
++static uint64_t ps5_pspmbox_read(void *opaque, hwaddr addr, unsigned size)
++{
++    return 0x80000000;
++}
++static void ps5_pspmbox_write(void *opaque, hwaddr addr, uint64_t val,
++                              unsigned size)
++{
++    /* accept and ignore */
++}
++static const MemoryRegionOps ps5_pspmbox_ops = {
++    .read = ps5_pspmbox_read,
++    .write = ps5_pspmbox_write,
++    .endianness = DEVICE_LITTLE_ENDIAN,
++    .valid.min_access_size = 1,
++    .valid.max_access_size = 8,
++};
++
+ static void pc_q35_init(MachineState *machine)
+ {
+     PCMachineState *pcms = PC_MACHINE(machine);
+@@ -129,6 +153,15 @@
+     BusState *idebus[MAX_SATA_PORTS];
+     ISADevice *rtc_state;
+     MemoryRegion *system_memory = get_system_memory();
++    /* hvmodel (L-441): install the PSP mailbox model as a high-priority
++       overlapping subregion so it wins over the PCI hole mapping. */
++    {
++        MemoryRegion *ps5_mbox = g_new(MemoryRegion, 1);
++        memory_region_init_io(ps5_mbox, NULL, &ps5_pspmbox_ops, NULL,
++                              "ps5-psp-mbox", 0x10);
++        memory_region_add_subregion_overlap(system_memory,
++                                            PS5_PSPMBOX_ADDR, ps5_mbox, 1000);
++    }
+     MemoryRegion *system_io = get_system_io();
+     MemoryRegion *pci_memory;
+     MemoryRegion *rom_memory;
+diff -ruN orig/target/i386/tcg/sysemu/svm_helper.c new/target/i386/tcg/sysemu/svm_helper.c
+--- orig/target/i386/tcg/sysemu/svm_helper.c	2026-11-21 21:58:51.222837063 +0530
++++ new/target/i386/tcg/sysemu/svm_helper.c	2026-11-21 21:58:51.231826622 +0530
+@@ -459,6 +459,13 @@
+ 
+ void helper_vmmcall(CPUX86State *env)
+ {
++    /* hvmodel (L-440): when NOT running as an SVM guest, answer a bare
++       VMMCALL as the PS5 hypervisor would for the boot-reached hypercalls --
++       set eax=0 and return, instead of raising #UD. */
++    if (!(env->hflags & HF_GUEST_MASK)) {
++        env->regs[R_EAX] = 0;
++        return;
++    }
+     cpu_svm_check_intercept_param(env, SVM_EXIT_VMMCALL, 0, GETPC());
+     raise_exception(env, EXCP06_ILLOP);
+ }
+diff -ruN orig/target/i386/tcg/translate.c new/target/i386/tcg/translate.c
+--- orig/target/i386/tcg/translate.c	2026-11-21 21:58:51.221952760 +0530
++++ new/target/i386/tcg/translate.c	2026-11-21 21:58:51.231674922 +0530
+@@ -5927,9 +5927,9 @@
+             break;
+ 
+         case 0xd9: /* VMMCALL */
+-            if (!SVME(s)) {
+-                goto illegal_op;
+-            }
++            /* hvmodel (L-440): drop the SVME gate so a bare VMMCALL from the
++               PS5 kernel (a guest, EFER.SVME off) reaches the helper instead
++               of #UD. */
+             gen_update_cc_op(s);
+             gen_update_eip_cur(s);
+             gen_helper_vmmcall(tcg_env);

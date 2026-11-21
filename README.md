@@ -100,6 +100,7 @@ anything changing hands. There is no way to run a game here, and no path toward 
 ```
 PS5-1422-REHOST/
 ├── METHODOLOGY.md                the approach and the complete toolchain
+├── ACKNOWLEDGEMENTS.md           firmware credit (KIMUNAKI) and thanks
 ├── docs/
 │   ├── faq.md                    the common questions, answered plainly
 │   ├── glossary.md               the project's vocabulary in plain terms
@@ -109,7 +110,7 @@ PS5-1422-REHOST/
 ├── harness/
 │   ├── MANIFEST.md               what each file is, and the exact build and run commands
 │   ├── trampoline/               the loader that rebuilds the kernel's expected world
-│   ├── qemu-device-models/       hardware modelled in QEMU (worked example: the timer)
+│   ├── qemu-device-models/       hardware modelled in QEMU (HPET timer + the hvmodel patch)
 │   ├── boot/                     the boot and live-inspection scripts
 │   └── analysis-index/           the static-analysis tooling used to read the kernel
 └── evidence/
@@ -119,19 +120,15 @@ PS5-1422-REHOST/
 
 </details>
 
-## Credits
-
-Firmware supplied by **KIMUNAKI** ([@iamWitchKing](https://x.com/iamWitchKing)) — the 14.22 kernel
-and hypervisor-service images this entire project rests on. This repository does not distribute
-them; all analysis, patches, and errors are the authors' own.
-
-With thanks to R0nov4, ccclosed, danthespal, the QEMU and FreeBSD projects, and the independent
-reviewers whose refutations kept this record honest. Full details, scope of the credit, and the
-citation line are in [`ACKNOWLEDGEMENTS.md`](ACKNOWLEDGEMENTS.md).
-
 ## Scope and ethics
 
 This is security research and interoperability work on firmware obtained for that purpose. It
 distributes no copyrighted code or keys and enables no piracy — there is no game, no content, and
 no path to either. Findings that could affect users are disclosed privately to the vendor rather
 than published. The full statement is in [`docs/provenance.md`](docs/provenance.md).
+
+## Credits
+
+Firmware supplied by **KIMUNAKI** ([@iamWitchKing](https://x.com/iamWitchKing)) — the 14.22 kernel
+and hypervisor-service images this project rests on. The scope of that credit, the special thanks,
+and the citation line are in [`ACKNOWLEDGEMENTS.md`](ACKNOWLEDGEMENTS.md).

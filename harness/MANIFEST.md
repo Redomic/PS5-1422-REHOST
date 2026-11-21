@@ -44,13 +44,15 @@ python3 trampoline/emu_graft_seam.py   <candidate>.elf
 
 | File | Role |
 |---|---|
-| `aeolia_hpet.c` | the worked example: presents the Sony southbridge identity `hpet_pci` probes for, with QEMU's real HPET aliased into the aperture so the kernel's own driver drives a real timer |
-| `INTEGRATION.md` | drop-in + build against QEMU 8.2.2 |
+| `aeolia_hpet.c` | the HPET southbridge model: presents the Sony identity `hpet_pci` probes for, with QEMU's real HPET aliased into the aperture so the kernel's own driver drives a real timer |
+| `INTEGRATION.md` | HPET model drop-in + build against QEMU 8.2.2 |
+| `hvmodel.patch` | three QEMU 8.2.2 source edits that model the PSP mailbox and the boot-reached hypervisor calls — what the 62-patch baseline boot actually runs on |
+| `hvmodel.md` | what the three edits do, how to build the model QEMU, and how to verify it (by boot, not by hash) |
 
-This is "model what is" in source form. The other models (the `vmmcall` hypercall handler, the
-PSP mailbox MMIO device) are specified per-synthetic in
-[`../docs/synthetic-register.md`](../docs/synthetic-register.md) and built into the same QEMU by
-the same method; the HPET model is included in full as the reference for the technique.
+This is "model what is" in source form: the HPET model and `hvmodel.patch` together are the QEMU
+the baseline boots against. Each edit is also registered in
+[`../docs/synthetic-register.md`](../docs/synthetic-register.md). Build both into one
+`qemu-system-x86_64-hvmodel` binary — see [`../docs/reproducing.md`](../docs/reproducing.md) §3.
 
 ## `boot/` — the run harness
 
