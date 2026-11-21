@@ -26,13 +26,22 @@ each step in full; new terms are in the [glossary](glossary.md).
 
 ## 1. Host
 
+The exact machine the result was produced on — the reference host. Nearby configurations should
+work; this is the one that is proven.
+
 | | |
 |---|---|
-| CPU | AMD x86-64 with nested virtualization (SVM) enabled |
-| Memory | 60 GiB (the guest is given 16 GiB; headroom is for the toolchain) |
-| Kernel | Linux with KVM; nested KVM on |
-| QEMU | **8.2.2**, built from source with the device models compiled in (see §3) |
-| Toolchain | `nasm`, `ld` (binutils), `python3`; Ghidra 11.4.2 + JDK 21 for the static index |
+| CPU | AMD Ryzen 9 9950X — 16 cores / 32 threads, AMD-V (SVM) with nested virtualization |
+| Memory | 64 GiB DDR5-5600 (≈60 GiB available to the OS; the guest is given 16 GiB) |
+| GPU | AMD Radeon integrated (RDNA, PCI `1002:13c0`) + a discrete NVIDIA card — neither is used for the boot (no passthrough) |
+| OS | Ubuntu 24.04.3 LTS, Linux kernel 7.0.0-42-generic |
+| Virtualization | `/dev/kvm` present, `kvm_amd nested=1` |
+| QEMU | **8.2.2**, built from source with the device models compiled in (§3). The distro's system QEMU is also 8.2.2, but lacks the models |
+| Toolchain | NASM 2.16.01, GNU ld 2.42 (binutils), Python 3.13; Ghidra 11.4.2 + JDK 21 for the static index |
+
+The CPU matters more than the rest: the kernel is AMD x86-64 code, and the host is the same family,
+so it runs directly. The relevant processor features are present and used — `svm`/`npt` for nested
+KVM, `vmmcall` for the hypervisor-call path, and `smap`/`smep`, which the kernel enforces.
 
 A note on acceleration: the CPU path is native x86-on-x86 through KVM, which is why the boot runs
 at a usable speed. The device-config path itself does not depend on KVM being available, but the
