@@ -46,3 +46,9 @@ trampoline ELF, which *does* reproduce.
 
 The edits are transcribed from the project's recorded build spec and were regenerated against
 pristine QEMU 8.2.2; `hvmodel.patch` applies cleanly with `patch -p1`.
+
+**Boot-confirmed.** The patch was applied to pristine QEMU 8.2.2, compiled clean, and the resulting
+binary ran the baseline: `BTEXT-HIT … (run valid)`, banner `ACTIVE: 62 patches`, and
+`Device configuration finished.` on the serial log. Reaching device-config at 62 patches requires
+these models to work (the equivalent trampoline patches are reverted there), so this confirms the
+patch end-to-end — not just that it applies.
