@@ -13,6 +13,11 @@ it took to get there.
 ![qemu](https://img.shields.io/badge/QEMU-8.2.2-blue)
 ![license](https://img.shields.io/badge/license-MIT-lightgrey)
 
+<br/>
+
+<img src="docs/assets/architecture.png" width="860"
+     alt="On a PC the console's early-boot chain — security processor, bootloader, hypervisor — is absent. This project supplies a small loader (page tables, memory map, boot settings) and QEMU device models (timer, mailbox, hypervisor calls) in its place, so the genuine 14.22 kernel runs its own code and reaches 'Device configuration finished.'">
+
 </div>
 
 ---
@@ -46,29 +51,17 @@ r230580/releases/14.22 Oct 27 2026 02:17:44 amd64
 Device configuration finished.
 ```
 
-A banner is easy to fake, so the more important question is whether the kernel *really ran*. The
-harness answers that on every boot: it records the exact moment control reaches the kernel's own
-entry point. If that moment never happens, nothing printed afterward can be trusted — a stray jump
-can land in memory and produce convincing nonsense — and the run is thrown out. The complete,
-unedited logs for both documented runs, including that checkpoint and every substitution the boot
-relied on, are in [`evidence/logs/`](evidence/logs/).
+The complete, unedited logs for both runs are in [`evidence/logs/`](evidence/logs/) — including the
+checkpoint that proves the kernel's own entry point executed.
 
 ## What's missing, and what we put in its place
 
-<div align="center">
-  <img src="docs/assets/architecture.svg" width="900"
-       alt="On a PC the console's early-boot chain — security processor, bootloader, hypervisor — is absent. This project supplies a small loader (page tables, memory map, boot settings) and QEMU device models (timer, mailbox, hypervisor calls) in its place, so the genuine 14.22 kernel runs its own code and reaches 'Device configuration finished.'">
-</div>
-
-Each stand-in is a small, honest lie told to the kernel, and every one of them is written down.
-The [synthetic register](docs/synthetic-register.md) lists them all — what each one pretends to
-be, what the kernel actually receives, and the condition under which it can be removed. None of
-them hides: each announces itself in the boot log, so a run is self-describing rather than
-something you have to take on faith. The kernel reaches its goal standing on **62** such patches,
-the irreducible remainder that stands in for parts of the console QEMU simply cannot be — a secure
-processor and its keys, among others. Most of what a bring-up like this accumulates turns out to
-be unnecessary once you measure what the boot actually touches; how that was pared down to only
-what's genuinely load-bearing is the subject of the [methodology](METHODOLOGY.md).
+Each stand-in is a small, honest lie, and every one is in the
+[synthetic register](docs/synthetic-register.md) — what it fakes, what the kernel receives, and how
+to remove it. None hides: each announces itself in the boot log. The kernel reaches its goal on
+**62** such patches, the irreducible remainder for parts of the console QEMU cannot be (a secure
+processor and its keys); how that was pared down to only what's load-bearing is the
+[methodology](METHODOLOGY.md).
 
 ## What this is, and isn't, claiming
 
