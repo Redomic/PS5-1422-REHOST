@@ -33,7 +33,7 @@ work; this is the one that is proven.
 |---|---|
 | CPU | AMD Ryzen 9 9950X — 16 cores / 32 threads, AMD-V (SVM) with nested virtualization |
 | Memory | 64 GiB DDR5-5600 (≈60 GiB available to the OS; the guest is given 16 GiB) |
-| GPU | AMD Radeon integrated (RDNA, PCI `1002:13c0`) + a discrete NVIDIA card — neither is used for the boot (no passthrough) |
+| GPU | AMD Radeon integrated (RDNA, PCI `1002:13c0`) + NVIDIA GeForce RTX 5090 (driver 595.99.02) — neither is used for the boot (no passthrough) |
 | OS | Ubuntu 24.04.3 LTS, Linux kernel 7.0.0-42-generic |
 | Virtualization | `/dev/kvm` present, `kvm_amd nested=1` |
 | QEMU | **8.2.2**, built from source with the device models compiled in (§3). The distro's system QEMU is also 8.2.2, but lacks the models |
