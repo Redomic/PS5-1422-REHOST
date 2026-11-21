@@ -55,23 +55,10 @@ relied on, are in [`evidence/logs/`](evidence/logs/).
 
 ## What's missing, and what we put in its place
 
-```mermaid
-flowchart LR
-    subgraph absent [The console's early boot — none of it runs here]
-        direction LR
-        PSP[Security processor] --> SBL[Bootloader] --> LV1[Hypervisor]
-    end
-
-    subgraph supplied [What this project provides instead]
-        direction TB
-        T["A small loader<br/>page tables, memory map, boot settings"]
-        Q["Modelled hardware in QEMU<br/>timer, mailbox, hypervisor calls"]
-    end
-
-    absent -. "replaced by" .-> supplied
-    supplied --> K["The genuine 14.22 kernel,<br/>running its own code"]
-    K --> M(["Device configuration finished."])
-```
+<div align="center">
+  <img src="docs/assets/architecture.svg" width="900"
+       alt="On a PC the console's early-boot chain — security processor, bootloader, hypervisor — is absent. This project supplies a small loader (page tables, memory map, boot settings) and QEMU device models (timer, mailbox, hypervisor calls) in its place, so the genuine 14.22 kernel runs its own code and reaches 'Device configuration finished.'">
+</div>
 
 Each stand-in is a small, honest lie told to the kernel, and every one of them is written down.
 The [synthetic register](docs/synthetic-register.md) lists them all — what each one pretends to

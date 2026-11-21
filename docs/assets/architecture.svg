@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 332" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" role="img" aria-label="On a PC the console's early-boot chain (security processor, bootloader, hypervisor) is absent. This project supplies a small loader and QEMU device models in its place, so the genuine 14.22 kernel runs its own code and reaches 'Device configuration finished.'">
+  <defs>
+    <marker id="arw" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#8b949e"/>
+    </marker>
+    <marker id="arwg" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#afb8c1"/>
+    </marker>
+    <filter id="sh" x="-20%" y="-20%" width="140%" height="160%">
+      <feDropShadow dx="0" dy="1.5" stdDeviation="2" flood-color="#1f2328" flood-opacity="0.10"/>
+    </filter>
+    <style>
+      .card{fill:#ffffff;stroke:#d8dee4;stroke-width:1.5}
+      .boxlbl{fill:#8b949e;font-size:11px;font-weight:700;letter-spacing:1.3px}
+      .absentbox{fill:#f6f8fa;stroke:#c2c8d0;stroke-width:1.4;stroke-dasharray:5 4}
+      .suppbox{fill:#f3f5ff;stroke:#cdd3f5;stroke-width:1.4}
+      .node{fill:#ffffff;stroke:#d0d7de;stroke-width:1.3}
+      .anode{fill:#ffffff;stroke:#ccd2da;stroke-width:1.2;stroke-dasharray:4 3}
+      .snode{fill:#ffffff;stroke:#b9c0ee;stroke-width:1.3}
+      .amain{fill:#6e7781;font-size:13px}
+      .smain{fill:#343a9c;font-size:13.5px;font-weight:600}
+      .ssub{fill:#8a90c4;font-size:10.5px}
+      .kmain{fill:#1a7f37;font-size:14.5px;font-weight:700}
+      .ksub{fill:#4a8c5f;font-size:11px}
+      .mk{fill:#ffffff;font-size:12.5px;font-weight:700}
+      .alabel{fill:#8b949e;font-size:11px;font-style:italic}
+      .edge{stroke:#8b949e;stroke-width:2;fill:none}
+      .iedge{stroke:#afb8c1;stroke-width:1.4;fill:none;stroke-dasharray:3 3}
+    </style>
+  </defs>
+
+  <rect class="card" x="8" y="8" width="1184" height="316" rx="16"/>
+
+  <!-- GROUP A: absent console chain -->
+  <rect class="absentbox" x="32" y="56" width="212" height="232" rx="12"/>
+  <text class="boxlbl" x="138" y="80" text-anchor="middle">ABSENT ON A PC</text>
+  <g filter="url(#sh)">
+    <rect class="anode" x="52" y="92"  width="172" height="48" rx="8"/>
+    <rect class="anode" x="52" y="160" width="172" height="48" rx="8"/>
+    <rect class="anode" x="52" y="228" width="172" height="48" rx="8"/>
+  </g>
+  <text class="amain" x="138" y="121" text-anchor="middle">Security processor</text>
+  <text class="amain" x="138" y="189" text-anchor="middle">Bootloader</text>
+  <text class="amain" x="138" y="257" text-anchor="middle">Hypervisor</text>
+  <path class="iedge" d="M138,140 L138,160" marker-end="url(#arwg)"/>
+  <path class="iedge" d="M138,208 L138,228" marker-end="url(#arwg)"/>
+
+  <!-- A -> B -->
+  <path class="edge" d="M244,172 L328,172" marker-end="url(#arw)"/>
+  <text class="alabel" x="287" y="162" text-anchor="middle">replaced by</text>
+
+  <!-- GROUP B: supplied -->
+  <rect class="suppbox" x="330" y="102" width="310" height="140" rx="12"/>
+  <text class="boxlbl" x="485" y="124" text-anchor="middle" fill="#6b74c9">SUPPLIED BY THIS PROJECT</text>
+  <g filter="url(#sh)">
+    <rect class="snode" x="350" y="134" width="270" height="44" rx="8"/>
+    <rect class="snode" x="350" y="186" width="270" height="44" rx="8"/>
+  </g>
+  <text class="smain" x="485" y="152" text-anchor="middle">Trampoline (loader)</text>
+  <text class="ssub"  x="485" y="169" text-anchor="middle">page tables · memory map · boot settings</text>
+  <text class="smain" x="485" y="204" text-anchor="middle">QEMU device models</text>
+  <text class="ssub"  x="485" y="221" text-anchor="middle">timer · mailbox · hypervisor calls</text>
+
+  <!-- B -> Kernel -->
+  <path class="edge" d="M640,172 L704,172" marker-end="url(#arw)"/>
+
+  <!-- Kernel -->
+  <g filter="url(#sh)">
+    <rect x="706" y="136" width="226" height="72" rx="10" fill="#eafbef" stroke="#39a35a" stroke-width="2"/>
+  </g>
+  <text class="kmain" x="819" y="168" text-anchor="middle">Genuine 14.22 kernel</text>
+  <text class="ksub"  x="819" y="188" text-anchor="middle">runs its own code</text>
+
+  <!-- Kernel -> Marker -->
+  <path class="edge" d="M932,172 L984,172" marker-end="url(#arw)"/>
+
+  <!-- Marker -->
+  <g filter="url(#sh)">
+    <rect x="986" y="146" width="198" height="52" rx="26" fill="#1f2328"/>
+  </g>
+  <text class="mk" x="1085" y="167" text-anchor="middle">Device configuration</text>
+  <text class="mk" x="1085" y="185" text-anchor="middle">finished.</text>
+</svg>
