@@ -1,0 +1,21 @@
+cff-version: 1.2.0
+message: "If you reference this work, please cite it as below."
+title: "PS5-1422-REHOST: a documented rehost of the PlayStation 5 14.22 kernel under QEMU"
+abstract: >-
+  The first publicly documented rehost of a current-generation console kernel on a PC:
+  a genuine PlayStation 5 system-software 14.22 kernel booted under QEMU on commodity
+  AMD hardware with no Sony hypervisor, to its own "Device configuration finished."
+  marker, with every synthetic required registered, observable, and revertible. Includes
+  the reconstruction method (remove what never runs, model what is, guards aren't inert)
+  and the full analysis and boot toolchain. Distributes no firmware.
+authors:
+  - name: "PS5-1422-REHOST contributors"
+version: "1.0.0"
+date-released: 2026-11-21
+keywords:
+  - kernel rehosting
+  - firmware analysis
+  - QEMU
+  - security research
+  - PlayStation 5
+license: MIT

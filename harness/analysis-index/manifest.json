@@ -1,0 +1,19 @@
+{
+  "source": "KIMUNAKI_PS5_kernel_1422.elf",
+  "generated_utc": "2026-11-19T04:24:01Z",
+  "functions": 26373,
+  "functions_decompiled": 21467,
+  "decomp_failures": 11,
+  "xrefs": 788844,
+  "xrefs_symbolic_skipped": 216884,
+  "xref_kinds": {
+    "data-read": 63638,
+    "data-write": 18115,
+    "data-address": 166434,
+    "jump": 328561,
+    "call": 212096
+  },
+  "strings": 46344,
+  "decomp_cap_in_functions_json": 3000,
+  "build_seconds": 2.6
+}

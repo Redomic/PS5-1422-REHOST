@@ -1,0 +1,41 @@
+# This repository never contains firmware, dumps, build output, or boot logs.
+# The rules below keep them out of history permanently.
+
+# firmware / binary evidence (never distribute)
+*.bin
+*.elf
+*.so
+*.o
+*.a
+*.ko
+*.zip
+*.pup
+*.PUP
+*.pkg
+*.img
+*.qcow2
+*.qcow
+*.raw
+*.dmp
+*.dump
+
+# boot / debug logs (regenerated each run)
+*.log
+*.out
+qemu_err*.txt
+
+# generated static-analysis index blobs (regenerated from your kernel)
+*.jsonl
+functions.json
+funcs.tsv
+*.tsv
+*.idx
+*.pkl
+decomp/
+**/__pycache__/
+*.pyc
+
+# scratch / OS metadata
+*.tmp
+.DS_Store
+._*
