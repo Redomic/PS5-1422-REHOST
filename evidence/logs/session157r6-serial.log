@@ -1,0 +1,623 @@
+PS5-TRAMP-1422: booting KIMUNAKI 14.22 kernel
+PS5-TRAMP-1422: entering long mode -> btext 0xffffffff8045a6c0
+SYNTH: kernel-side fakes ACTIVE: 62 patches (s157r6 L-441: all 3 PSP-mailbox patches P24/P4a/P4b RETIRED via QEMU PSP-mbox model; from 423; devconf-confirmed) (s144: ALL 10 S-16 false-positive power-write->hlt rows removed, L-422 audit; khfix minus 9 live S-16) (P1-P46 minus the RETIRED getter-selfhandle row: FUN_80e6f9c0 is Sony's real TLV getter again in b98, so a 0x9001 request reads the meta TLV SMAP block at PA 0x9B000 instead of the old stub's zero record at PA 0x4094820/Printed 'G') + HV14/HV0A (eax=0, no outputs) + P13/P14 graft of our PML4 slots + param-TLV @PA 0x9B000 + physfree=0x7100000 (S-18 handoff: btext stack dword 0x71000; the trampoline's own pages 0x7000000-0x7005400 stay OUTSIDE the kernel free pool; b86 was 0x40A8000, which let the kernel zero page 0x7000000) + low-panic stub @VA 0x20 (P22: copies at PA 0x20/0x4100020/0x4097020 - every kernel-domain VA-0x20 resolution; trap-safe L-214/L-217) + P23/S-23 DR6-store NOP @0xffffffff805f73e8 (mov dr6,rax -> 3x nop; load+and kept) + P24/S-24 PSP-MAILBOX-SEND FAKE @0xffffffff804c327a (psp_mbox_map_tmr's call 0xffffffff804c32e0 -> mov eax,1: SUCCESS IS INVENTED, cmd 0x75 TMR map only, no PSP device in QEMU, reply status [r15+4] stays the memset-zeroed buffer word so map_tmr returns 0) + P25/S-26 platform mode = 4 (kernel .data 0x81b1be0c static 1 -> 4; selects the memory-param path; six per-mode jump tables in FUN_80d2eb90; HARDWARE FACT INVENTED) + P26/S-27 INT3-hole call skip @0xffffffff80c1992a (call 0xffffffff80d2f990 -> xor eax,eax; the mode-4 branch's call 0xffffffff80232ca0 @0x80c19969 lies in the 0x80210090-0x802b1bc8 0xCC fill; THE GATE RESULT IS INVENTED AS 0 - FUN_80d2f990 IS NOT EXECUTED) + P27/S-28 application memory unavailable -> out-param -1, no panic @0xffffffff80c2146d (panic('Failed to allocate application memory') block -> mov rax,[rbp-0x460]; mov dword [rax],-1; jmp 0x80c213e2 + 13 nops; the caller FUN_80c1c080's `js 0x80c1c3a6` then runs its real no-application-memory continuation; ALLOCATION OUTCOME IS INVENTED - -1 is written and no allocation is attempted on that branch) + P28/P29/S-29 mode-4 hole calls skipped in the memory path (0x80233290 before the handler @0x80c1c340, 0x802ba220 inside it @0x80c2082a); those functions are ABSENT from the image (int3), so the calls are removed rather than answered (jmp short +3 at the caller; jmp 0x80c20f98 = the shared bail inside the handler) + P30/S-30 S4 preserved-physmap kernel-text removal check skipped @0xffffffff80c1c6af (the 6-byte je after FUN_80c1b030 returned 0 -> 6x nop, so control falls through to 0x80c1c6b5; the check's FAILURE is ignored - the preserved map may be WRONG, only S4/hibernate consumes it; the table's later reader FUN_80bcee70 guards on index >= 0, as does the INFO printer FUN_80c1b310, so a -1 index is skipped, not walked) + P34/S-35 full-block code-absent ret-0 mass-batch (286 more int3 targets across [0x80210090-0x80450d8b]; 314/315 non-fatal stubbed per gate23-fullblock audit, FATAL 0x80422570 off-path left int3) + P33/S-34 process_fork-cluster code-absent VOID ret-0 stubs (26x 31c0c3 at audited-void int3 targets 0x8023e000-0x8023fa30; CONSUMED targets 0x8023e4c0,e9b0,f5f0,f6a0 FLAGGED NOT-stubbed) + P32/S-33 TIER-A code-absent ret-stubs (xor eax,eax;ret at 12 int3 targets 0x802c9880,0x99e0,0x9af0,0x9b60,0x9c20,0x9c80,0x9ce0,0x9d60,0x9e00,0x9e90,0x9f50,0x9fb0) + P31/S-32 ACPI-MADT int3-hole tail-jmp skip @0xffffffff808c1886 (FUN_808c17a0 -> 0x802c9d60 is int3 fill = code absent, L-254; void side-effect-only call skipped, not answered) + S-36 ENV legacy-8259 quiesce (trampoline masks master+slave 8259 IMR=0xff before btext handoff = the quiesced-legacy-PIC state the PS5 boot chain delivers; QEMU's i8254 PIT is live and the kernel never programs the 8259, so without this mi_startup's enable-intr SYSINIT sti takes a phantom IRQ0 -> apic_get_interrupt=-1 -> vector 0xffffffff -> #GP past IDT; L-303) + P35/S-37 SMP IPI-gate install (forced-UP routes the SMP-init SYSINIT through the kernel's OWN cpu_mp_start FUN_80a96970 via je->nop @0x80d2c51e, installing IPI vectors 0xf6-0xfd incl 0xfb->handler 0x8045eec0 + zeroing the pending bitmap; jmp->ret @0x80d2c53f skips the MP-only AP-mem finalize FUN_808e6e20 that UP never runs; the PS5 is multi-core and the PSP/SEP subsystem sends a vector-0xfb self-IPI regardless of CPU count, so without this the self-IPI hit the rsvd stub -> Fatal trap 30; L-305) + P36/S-38 TEE/secure-video enable-gate REFUSE (NARROW lever: we are NOT claiming to be a PS5 and NOT fixing the SoC rev - the true source FUN_80b7b0c0->DAT_83dce530 is LEFT non-PS5 on purpose, broad blast radius): fallback tee-modevent gate store DAT_83e2f020 imm 1->0 @0x80c275f1 refuses ONE subsystem (secure-video/gc) for gate 3, machine honestly non-PS5 everywhere else; the tee mutex init before the store STILL RUNS (no uninit-global risk), only the gbase/secure-video attach is refused so FUN_80c264b0 skips gbase_allocate_dynamic_mmhub_vmid and never sx_xlocks the uninit 'gbase lock' 0x83dea458; COLLATERAL debt BY CHOICE: TEE/secure-video, HDCP, Blu-ray/BD, sceSbl/NpDrm and any TEE-session user are now absent - REVISIT at GPU/BD bring-up (L-315f) + P37/S-39 gc/gbase GPU-subsystem REFUSE at the lock-acquiring funnels (e9 @0x80bf8a10/0x80bfddc0/0x80bf3df0 -> stubs OVERWRITING the boot-dead gbase_initialize body @0x80bf2cf0, which is X-mapped on the same 2MB large page as the executing funnels and is never called without a GPU; MUST BE REVERTED at the GPU/VFIO+amdgps5 milestone - restore gbase_initialize + add real init): if DAT_83dea538==0 (no GPU BAR5 aperture, attach never ran) each returns its OWN native SCE error (0x804c0009/0x804c0003/0x804c0002) in eax BEFORE the sx_xlock/any MMIO; NO writes / NO logging this iteration (the stub page is read-only R-X; a writable once-flag was dropped to guarantee no write-fault - the boot advancing past the DCE hang is itself proof the guard fired); pre-inits NOTHING, fakes NOTHING; records the SHAPE of the GPU demand (which gc entries device-config reached), not a spec; 3 of 41 ext-reachable gbase funnels guarded (bounded iteration; v1 placement in the CC-hole @0x802b0000 hit a fault, relocated, L-315g) + P38/S-40 DCE display MODULE REFUSE at its modevent entry (e9 @FUN_808a14e0 -> stub @0x80bf2e00, also in the boot-dead X-mapped gbase_initialize body; REVERT at GPU milestone): if cmd(esi)==0 (MOD_LOAD) AND DAT_83dea538==0 (no GPU) -> return ENXIO(6), else original; module_register_init handles the nonzero MOD_LOAD return gracefully (runs MOD_UNLOAD cleanup, prints 'MOD_LOAD error', NO panic - mirrors 13.60 reaching DEVCONF with MOD_LOAD errors). ONE guard kills BOTH DCE gbase touches (the sx path FUN_80cf1b70 AND the power-gating rw-lock path FUN_80d04ee0 that hit the spin-lock wall). MODULE-LEVEL refusal = the convergent strategy (per-funnel P37 proven non-convergent: gbase lock FAMILY x consumers); keeps P36+P37 as defense-in-depth; pre-inits NOTHING (L-318) + P39/S-41 MP1/SMU CPU-power register-primitive REFUSE on NULL softc (e9 @0x80ead9c0/0x80eadb10/0x80eadc70 -> guard stubs @0x80bf2e40/0x80bf2e60/0x80bf2e80 in the boot-dead X-mapped gbase_initialize body; REVERT at firmware/VFIO milestone): the MP1 softc DAT_84033330 is NULL (its writer FUN_80eade00 never ran = absent MP1/SMU firmware, attribution VERIFIED independent of P36-38, L-321), so each primitive guards on [0x84033330]==0 BEFORE the NULL lock-acquire/deref and returns a no-response value (read-prim FUN_80ead9c0 -> 0 so mp1fw_waitmsg spins out then hangs up; write-prim FUN_80eadb10 -> void ret, no reg write; bapm-thunk FUN_80eadc70 -> 6 so _mp1_bapm_logging_init_intr reports MSI-alloc error) = reproduces 13.60's own MP1 fail-soft storm (mp1fw busy/already hangup/zeroed reg dump/_bapm_logging failed); answers the absent-device call (hv14/hv0a pattern), pre-inits NOTHING, fakes NO softc (a fabricated softc would feed kobj->real SMU MMIO and still fault); else (softc present) replays the displaced prologue and jmps back (L-321) + P40/S-42 gbase gc-register READ (FUN_80bf3570 -> eax 0) + WRITE (FUN_80bf43d0 -> skip write, void ret) helpers REFUSE on no-GPU DAT_83dea538==0 (e9 @0x80bf3570/0x80bf43d0 -> guard stubs @0x80bf2eb0/0x80bf2ee0 in the boot-dead X-mapped gbase_initialize body; REVERT at GPU/VFIO milestone): both helpers acquire the uninit gbase rw-lock 0x83dea4a0 then deref DAT_83dea538 (GPU BAR5 aperture ptr, NULL = no GPU); the guard tests [0x83dea538]==0 at ENTRY BEFORE the lock and supplies the absent-device value - reg reads return 0 (= 13.60's own zeroed MP1 reg dump) / reg writes are skipped - so the uninit rw-lock 0x83dea4a0 is never acquired; make-it-exist (answers the absent GPU register file), NOTHING nop'd, fakes NO aperture. REACHED here via the MP1 timeout/reg-dump handler FUN_80870d60 (unlocked by P39); FUN_80870d60 line 138 calls the WRITE sibling FUN_80bf43d0 with the read guard's own 0 so BOTH are guarded (audited). BLAST RADIUS (L-205 transparency): the read guard changes the return of ~1179 gc-register call sites across ~230 fns kernel-wide to 0 when GPU absent = the uniform no-GPU state; LATENT gbase siblings (FUN_80bf3a20/3640/35d0/...) NOT on the FUN_80870d60 path are left for next-boot walls (L-322) + P41/S-43 pcist MODULE REFUSE at its modevent FUN_806c9e20 (e9 @0x806c9e20 -> stub @0x80bf2f00, boot-dead X-mapped gbase_initialize body; REVERT at SoC-device-model/VFIO milestone): if cmd(esi)==0 (MOD_LOAD) -> return ENXIO(6) in eax (honest 'no SoC PCI bridge device' - pcist_load FUN_806c9e70 HARD-PANICS 'Not found soc pci bridge' because PS5 SoC PCI devices AMD 0x1022:0x13df/0x13e4 + Sony 0x104d:0x90eb 'titania f0' are categorically absent in QEMU -M pc), else replay the displaced prologue (push rbp;mov rbp,rsp;push rbx) + jmp 0x806c9e25; module_register_init FUN_8078e0d0 handles the nonzero MOD_LOAD return gracefully (prints 'MOD_LOAD (pcist) error 6', NO panic) = 13.60's NET state (13.60 reaches DEVCONF with pcist failing too, its incidental ENOMEM 12; we use the HONEST no-device code 6 not a faked memory failure); NOTHING nop'd, fakes NO device (L-323) + P42/S-44 av_control (AV/video/HDCP display) MODULE REFUSE at its modevent FUN_80682390 (e9 @0x80682390 -> stub @0x80bf2f20, boot-dead X-mapped gbase_initialize body; REVERT at GPU/VFIO/VBIOS milestone): if cmd(esi)==0 (MOD_LOAD) -> return ENXIO(6) in eax (honest 'av_control/GPU-display absent' - with no GPU/VBIOS the VBIOS-ROM parser FUN_80e3a730 never runs, so the 'gbase vbios lock' sx 0x8402b9f0 is left uninit (lo_name 0, state 0x4 EXCL_WAITERS/no-owner) and av_control's FUN_80682580/FUN_805367b0 chain sx_xlocks it via FUN_80e3aaf0 -> thread0 sleeps forever, L-327), else replay the displaced prologue (push rbp;mov rbp,rsp;push rbx) + jmp 0x80682395; module_register_init FUN_8078e0d0 handles the nonzero MOD_LOAD return gracefully (same loader as P38 DCE-6 / P41 pcist-6, NO panic) = 13.60's NET state (13.60 reaches DEVCONF with the whole GPU/display/HDCP stack failing - dce/hdmi/hdcp/vcn/sdma - and without av_control); NOTHING nop'd, fakes NO device, pre-inits NOTHING (L-327) + P43/S-45 sbl_sm_service (Secure Boot Loader) MODULE REFUSE at its modevent FUN_807ad780 (e9 @0x807ad780 -> stub @0x80bf2f40, boot-dead X-mapped gbase_initialize body; REVERT at secure-processor/BD bring-up): v2 COMPLETE modevent replacement (never re-enters the real FUN_807ad780 - no replay, no jmp-back): if cmd(esi)==0 (MOD_LOAD) -> ENOTSUP(45) in eax (= 13.60's own sbl err45, honest 'no secure-processor' - with no SBL/secure-processor HW the SBL driver core never sx_init's its msg-handler registry sx 0x83739fd8, so the real _sceSblSmServiceIoInitialize -> sceSblDriverRegisterMsgHandler sx_xlocks the uninit lock -> wedge, L-328); ALL OTHER cmds (MOD_UNLOAD/quiesce/shutdown) -> 0 no-op (a refused module has NOTHING to unload/finalize - 0 = 'nothing to unload' is correct FreeBSD module semantics, NOT a fake). v1 replayed the 6-byte prologue for cmd!=0, which let module-unload-on-failure run sbl's real sm_service_finalize FUN_80540160 on the never-loaded module -> wedge on uninit MUTEX 0x83b5c310 (C-052); v2 never runs sbl's real body so that mutex is never touched. module_register_init FUN_8078e0d0 handles the nonzero MOD_LOAD return gracefully (same loader as P38 DCE-6 / P41 pcist-6 / P42 av_control-6, NO panic) = 13.60's NET state (DEVCONF with sbl_sm_service error 45); P36 already flags sceSbl/NpDrm absent collateral; NOTHING nop'd, fakes NO device, pre-inits NOTHING (L-328) + P44/S-46 cam/sceCameraDriver MODULE REFUSE at modevent FUN_80ccea00 (e9 @0x80ccea00 -> stub @0x80bf2f50, boot-dead X-mapped gbase_initialize body; REVERT at GPU/VFIO milestone): COMPLETE modevent replacement (P43-v2 pattern, NEVER re-enters the real body - no replay/no jmp-back): if cmd(esi)==0 (MOD_LOAD) -> ENOTSUP(45) in eax (module's own default = honest 'no camera/GPU', NOT a faked err12 memory-failure); ALL OTHER cmds -> 0 no-op (a refused module has nothing to unload; re-entering the real MOD_UNLOAD would run eventhandler_deregister on uninit state). WHY (analyst-settled L-332): with no GPU our P37/S-39 gbase refuse makes the camera's SceCameraDriverMain kthread (FUN_80ccf200, spawned ONLY by the MOD_LOAD branch via kthread_add) call gbase_map_to_vmid0 FUN_80bf8a10 -> 0x804c0009, and the error-cleanup tears down 4 isoc bufs via FUN_80e34ad0 with NO NULL-check -> buf1=NULL -> pmap_enter(kernel_pmap, va=0) -> pmap_enter_pde panic (C-053); refusing MOD_LOAD stops the kthread_add so the GPU-map never runs. module_register_init FUN_8078e0d0 handles the nonzero MOD_LOAD return gracefully (same loader as P38/P41/P42/P43, NO panic) = 13.60's NET state (DEVCONF with cam failing MOD_LOAD error 12 early @oracle 1255); honest GPU-absent collateral, recurring GPU-buffer-cleanup class, NOTHING nop'd, fakes NO device, pre-inits NOTHING (L-333) + P45/S-47 SIE-IOMMU NULL-softc GUARD at the PASID-bind device-config SYSINIT FUN_80741090 (e9 @0x80741090 -> stub @0x80bf2f60, boot-dead X-mapped gbase_initialize body; REVERT at SoC/IOMMU-model milestone): the SIE-IOMMU global softc *(0xffffffff83783a70)=NULL (absent IOMMU/northbridge HW, S-20), and this SYSINIT's sie_iommu_bind_pasid FUN_80701980 UNCONDITIONALLY _mtx_lock_sleeps softc+0xa8 (mtx_lock word; lock_object base softc+0x90) -> NULL-base uninit-mutex turnstile-wait forever = the pre-DEVCONF wedge (L-335, C-054); SAME NULL/uninit-base-lock disease as MP1(P39)/gbase/sbl, now a mutex. Guard tests [0x83783a70]==0 at ENTRY (cmp qword[0x83783a70],0, sign-extended disp32 = P39 pattern): if NULL (no IOMMU) -> ret, the whole PASID-bind SYSINIT does nothing (mi_startup ignores SYSINIT returns) so the NULL lock is never acquired; else (softc present) replay the displaced prologue (push rbp;mov rbp,rsp;push rbx) + jmp 0x80741095. GUARDED THE SYSINIT not bind_pasid because bind_pasid's sole caller (this SYSINIT) PANICS on a nonzero return (test eax,eax;jne->panic FUN_80ec8050;ud2) and a 0-return would need a fabricated pasid at *param_2 -> guarding the SYSINIT avoids both the panic and the fake. fakes NOTHING, pre-inits NO softc (a fabricated softc would feed real IOMMU MMIO and refault). 13.60 reaches DEVCONF with its SIE-IOMMU softc non-NULL (HW present, no iommu/pasid oracle line), so skipping this SYSINIT when the HW is absent is 13.60-faithful (L-336) + P46/S-48 UMC (AMD Unified Memory Controller) module CONDITIONAL REFUSE at modevent 0x80b906f0 (e9 @0x80b906f0 -> stub @0x80bf2f80, boot-dead X-mapped gbase_initialize body; REVERT at AMD-UMC/northbridge-model milestone): the UMC init FUN_80b90710 calls FUN_805082f0(0,0,0) (find PCI dev seg0/bus0/slot0/fn0 in Sony registry DAT_830a8df0); NULL -> HARD-PANIC 'UMC: BSF(0:0:0) is not found'. On q35 DAT_830a8df0==0 (registry EMPTY at UMC-modload, live-confirmed park RnouJD; AMD northbridge/UMC absent on Intel MCH). Guard: MOD_LOAD(esi==0) & DAT_830a8df0==0 -> ENXIO(6); else run the real init (bare q35/-M pc populated-registry UNCHANGED = baseline-safe); non-MOD_LOAD replicates original modevent (MOD_UNLOAD->0, other->0x2d). module_register_init handles the nonzero MOD_LOAD gracefully (same loader as P38/P41-P44, NO panic); answers the absent-device call (P41/P45 pattern), fakes NO device, pre-inits NOTHING (L-371) + S-55/kenv (L-391/L-392/L-394): meta tag 0x8006 MODINFOMD_ENVP carries a static kenv (physical ptr PA 0x40940A0 into the copied module metadata, relocated by FUN_80c19880 into the KVA self-remap window): hint.icc.0.msi=0 + hint.hpet_pci.0.msi=0 (+hint.hpet.0.msi=0 insurance) make icc take legacy rid-0 and the Belize HPET skip pci_alloc_msi (clears the s135 'icc unknown device 17' classifier panic; icc then benignly 'Can't allocate IRQ' ret 12, HPET continues to et-registration). NOT a hardware fake: boot env vars the real PS5 loader supplies. s136 proved the env must sit INSIDE the walked TLV region (as carrier tag 0x8F00's payload before the terminator) or the kernel reclaims/zeroes it past [modulep,terminator+8) before device-attach + S-56/HPET-enable (L-396): the trampoline sets QEMU HPET CONFIG PA 0xFED00010 bit0=ENABLE in 32-bit flat mode (we are the firmware; HPET resets disabled) so the Belize hpet_pci liveness double-read of MAIN_COUNTER sees it incrementing -> the quality-950 HPET eventtimer registers -> no 'failed to find a polling timer' panic ; register: LEDGER.md 11 (S-01..S-30, S-32, S-33, S-34, S-35, S-36, S-37, S-38, S-39, S-40, S-41, S-42, S-43, S-44, S-45, S-46, S-47, S-48, S-55, S-56; S-31 is the gdb-side MPERF/APERF inject; the S-24 entry is OWED)
+PT-VERIFY: PML4[1FF]=040A2003 PDPT_KVA[1FE]=040A5003 PDPT_KVA[1C0]=040A6003 PD_KVA[1]=00200083/00200000 PD_KVA[2]=00400083 PD_DMAP[1]=00200083 PML4[1FC]=040A7003 PDPT_UNIV[0]=040A4003 PDPT_KVA[0]=040A4003
+K64A: K64B: ATMRCALL tmrid=00000024 arg2=07110000 arg3=042F0000 ret=80800776
+SIE CONFIDENTIAL
+Copyright (C) 2026 Sony Interactive Entertainment Inc.
+Copyright (c) 1992-2016 The FreeBSD Project.
+Copyright (c) 1979, 1980, 1983, 1986, 1988, 1989, 1991, 1992, 1993, 1994
+	The Regents of the University of California. All rights reserved.
+SIE CONFIDENTIAL
+Copyright (C) 2026 Sony Interactive Entertainment Inc.
+Copyright (c) 1992-2016 The FreeBSD Project.
+Copyright (c) 1979, 1980, 1983, 1986, 1988, 1989, 1991, 1992, 1993, 1994
+	The Regents of the University of California. All rights reserved.
+FreeBSD is a registered trademark of The FreeBSD Foundation.
+FreeBSD is a registered trademark of The FreeBSD Foundation.
+r230580/releases/14.22 Oct 27 2026 02:17:44 amd64
+r230580/releases/14.22 Oct 27 2026 02:17:44 amd64
+FIXME!!(compiler_version)
+FIXME!!(compiler_version)
+mDBG: Kernel Build ID = dc496d74ef9d4813
+mDBG: Kernel Build ID = dc496d74ef9d4813
+Memory mode: 1: PPR16  (GDDR6 : 16 GiB, DDR5 : 0 GiB)
+Memory mode: 1: PPR16  (GDDR6 : 16 GiB, DDR5 : 0 GiB)
+ Application memory(Total)   : 0x000000032d600000 bytes (13014MiB) 
+ Application memory(Total)   : 0x000000032d600000 bytes (13014MiB) 
+     App memory (default)    : 0x000000032d600000 bytes (13014MiB) 
+     App memory (default)    : 0x000000032d600000 bytes (13014MiB) 
+     Tool memory (default)   : 0x0000000000000000 bytes (    0MiB) 
+     Tool memory (default)   : 0x0000000000000000 bytes (    0MiB) 
+ Application pagetable (DDR5): 0x0000000000000000 bytes (    0MiB) DDR5
+ Application pagetable (DDR5): 0x0000000000000000 bytes (    0MiB) DDR5
+ Application FS cache memory : 0x0000000008c00000 bytes (  140MiB) 
+ Application FS cache memory : 0x0000000008c00000 bytes (  140MiB) 
+ Direct memory (system)      : 0x000000002b000000 bytes (  688MiB) 
+ Direct memory (system)      : 0x000000002b000000 bytes (  688MiB) 
+ Workspace Metadata memory   : 0x0000000000000000 bytes (    0MiB) 
+ Workspace Metadata memory   : 0x0000000000000000 bytes (    0MiB) 
+ Flexible memory (system)    : 0x000000008a79c000 bytes ( 2216MiB) 
+ Flexible memory (system)    : 0x000000008a79c000 bytes ( 2216MiB) 
+ NDA Text memory (system)    : 0x0000000000000000 bytes (    0MiB) 
+ NDA Text memory (system)    : 0x0000000000000000 bytes (    0MiB) 
+ Vision memory               : 0x0000000002000000 bytes (   32MiB) 
+ Vision memory               : 0x0000000002000000 bytes (   32MiB) 
+ Remote Viewer DMEM          : 0x0000000000000000 bytes (    0MiB) 
+ Remote Viewer DMEM          : 0x0000000000000000 bytes (    0MiB) 
+ Dynlib Extended PFI         : 0x0000000000000000 bytes (    0MiB) 
+ Dynlib Extended PFI         : 0x0000000000000000 bytes (    0MiB) 
+ Name APR Trace Cache        : 0x0000000000000000 bytes (    0MiB) 
+ Name APR Trace Cache        : 0x0000000000000000 bytes (    0MiB) 
+ BIOS memory size            : 0x0000000000212000 bytes (    3MiB) 
+ BIOS memory size            : 0x0000000000212000 bytes (    3MiB) 
+ BIOS memory size(DDR5)      : 0x0000000000000000 bytes (    0MiB) DDR5
+ BIOS memory size(DDR5)      : 0x0000000000000000 bytes (    0MiB) DDR5
+ Kernel static size          : 0x000000000c452000 bytes (  197MiB) 
+ Kernel static size          : 0x000000000c452000 bytes (  197MiB) 
+ Kernel static size(DDR5)    : 0x0000000000000000 bytes (    0MiB) DDR5
+ Kernel static size(DDR5)    : 0x0000000000000000 bytes (    0MiB) DDR5
+ Reserved memory             : 0x0000000006000000 bytes (   96MiB) 
+ Reserved memory             : 0x0000000006000000 bytes (   96MiB) 
+ Reserved memory(DDR5)       : 0x0000000000000000 bytes (    0MiB) 
+ Reserved memory(DDR5)       : 0x0000000000000000 bytes (    0MiB) 
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+can't re-use a leaf ((null))!
+CPU: CPU: AMD EPYC Processor (AMD EPYC Processor (1600 MHz 1600 MHz K8K8-class CPU)
+-class CPU)
+  Origin="AuthenticAMD"  Origin="AuthenticAMD"  Id=0x800f12  Id=0x800f12  Family=0x17  Family=0x17  Model=0x1  Model=0x1  Stepping=2  Stepping=2
+
+  Features=0x783fbfd<FPU,DE,PSE,TSC,MSR,PAE,MCE,CX8,APIC,SEP,MTRR,PGE,MCA,CMOV,PAT,PSE36,MMX,FXSR,SSE,SSE2>  Features=0x783fbfd<FPU,DE,PSE,TSC,MSR,PAE,MCE,CX8,APIC,SEP,MTRR,PGE,MCA,CMOV,PAT,PSE36,MMX,FXSR,SSE,SSE2>
+
+  Features2=0xfed8320b<SSE3,PCLMULQDQ,MON,SSSE3,FMA,CX16,SSE4.1,SSE4.2,MOVBE,POPCNT,AESNI,XSAVE,OSXSAVE,AVX,F16C,RDRAND,HV>  Features2=0xfed8320b<SSE3,PCLMULQDQ,MON,SSSE3,FMA,CX16,SSE4.1,SSE4.2,MOVBE,POPCNT,AESNI,XSAVE,OSXSAVE,AVX,F16C,RDRAND,HV>
+
+  AMD Features=0x2c500800<SYSCALL,NX,MMX+,Page1GB,RDTSCP,LM>  AMD Features=0x2c500800<SYSCALL,NX,MMX+,Page1GB,RDTSCP,LM>
+
+  AMD Features2=0x175<LAHF,SVM,CR8,ABM,SSE4A,Prefetch>  AMD Features2=0x175<LAHF,SVM,CR8,ABM,SSE4A,Prefetch>
+
+  Structured Extended Features=0x201c0128<BMI1,AVX2,BMI2,RDSEED,ADX,SMAP,SHA>  Structured Extended Features=0x201c0128<BMI1,AVX2,BMI2,RDSEED,ADX,SMAP,SHA>
+
+  XSAVE Features=0x5<XSAVEOPT,XINUSE>  XSAVE Features=0x5<XSAVEOPT,XINUSE>
+
+  SVM:   SVM: NAsids=16,Features=0x1<NP>NAsids=16,Features=0x1<NP>
+
+Revision=1, ASIDs=16Revision=1, ASIDs=16
+
+Hypervisor: Origin = "TCGTCGTCGTCG"
+Hypervisor: Origin = "TCGTCGTCGTCG"
+CPU Features: SMAP Enabled, UMIP Disabled
+CPU Features: SMAP Enabled, UMIP Disabled
+Event timer "LAPIC" quality 400
+Event timer "LAPIC" quality 400
+ACPI APIC Table: <BOCHS  BXPC    >
+ACPI APIC Table: <BOCHS  BXPC    >
+FreeBSD/SMP: Multiprocessor System Detected: 1 CPUs
+FreeBSD/SMP: Multiprocessor System Detected: 1 CPUs
+FreeBSD/SMP: FreeBSD/SMP: 1 package(s)1 package(s)
+
+ioapic0 <Version 2.0> irqs 0-23 on motherboard
+ioapic0 <Version 2.0> irqs 0-23 on motherboard
+random: entropy device external interface
+random: entropy device external interface
+[CM] (355/kernel): Critical: 0x28021968, 0x00000000
+[CM] (355/kernel): Critical: 0x28021968, 0x00000000
+[CM] (412/kernel): Critical: 0x09081967, 0x00000000
+[CM] (412/kernel): Critical: 0x09081967, 0x00000000
+GEOM_SCHEDGEOM_SCHED: : Modevent 0.Modevent 0.
+
+GEOM_SCHEDGEOM_SCHED: : Initializing global data.Initializing global data.
+
+GEOM_SCHEDGEOM_SCHED: : Loaded module is error 0.Loaded module is error 0.
+
+[RM] (16018/137720138263933): E00800 @555555555@@0@ ...
+[RM] (16018/137720138263933): E00800 @555555555@@0@ ...
+[RM] (16194/137720138263933): E00800 @1234567890@@0@ ...
+[RM] (16194/137720138263933): E00800 @1234567890@@0@ ...
+mp3_enable -> true
+mp3_enable -> true
+Recursive (309), DMAP (351, 388)
+Recursive (309), DMAP (351, 388)
+acpi0: acpi0: <BOCHS BXPC><BOCHS BXPC> on motherboard
+ on motherboard
+acpi0: acpi0: Power Button (fixed)
+Power Button (fixed)
+cpu0: cpu0: <ACPI CPU><ACPI CPU> on acpi0
+ on acpi0
+pcib0: pcib0: <ACPI Host-PCI bridge><ACPI Host-PCI bridge> on acpi0
+ on acpi0
+pcib0: pcib0: could not evaluate _ADR - AE_NOT_FOUND
+could not evaluate _ADR - AE_NOT_FOUND
+pci0: pci0: <ACPI PCI bus><ACPI PCI bus> on pcib0
+ on pcib0
+pci_attach: domain 0, busno 0
+pci_attach: domain 0, busno 0
+pci0: pci0: <display, VGA><display, VGA> at device 1.0 (no driver attached)
+ at device 1.0 (no driver attached)
+pci0: pci0: <bridge, PCI-PCI><bridge, PCI-PCI> at device 23.0 (no driver attached)
+ at device 23.0 (no driver attached)
+pcib1: pcib1: <PCI-PCI bridge><PCI-PCI bridge> on pci0
+ on pci0
+pci1: pci1: <PCI bus><PCI bus> on pcib1
+ on pcib1
+pci_attach: domain 0, busno 64
+pci_attach: domain 0, busno 64
+pci1: pci1: found titania pcie_glue
+found titania pcie_glue
+nvme0: nvme0: <Titania><Titania> on pci1
+ on pci1
+nvme0: nvme0: PCIe link status: link_speed=1 link_width=1
+PCIe link status: link_speed=1 link_width=1
+nvme0: nvme0: unable to allocate shared IRQ
+unable to allocate shared IRQ
+nvme0: nvme0: nvme_ctrlr_wait_for_ready called with desired_val = 1 but cc.en = 0
+nvme_ctrlr_wait_for_ready called with desired_val = 1 but cc.en = 0
+nvme0: nvme0: nvme_ctrlr_hw_reset 1 failed (6).  Destructing device
+nvme_ctrlr_hw_reset 1 failed (6).  Destructing device
+device_attach: nvme0 attach returned 6
+device_attach: nvme0 attach returned 6
+tpcie0: tpcie0: <Titania PCI Express glue><Titania PCI Express glue> on pci1
+ on pci1
+tpcie0: tpcie0: failed to reserve resource
+failed to reserve resource
+tpcie0: tpcie0: cannot set qos
+cannot set qos
+fcram0: fcram0: <Titania DRAM memory><Titania DRAM memory> on pci1
+ on pci1
+hpet_pci0: hpet_pci0: <Titania High Precision Event Timer><Titania High Precision Event Timer> on pci1
+ on pci1
+Timecounter "HPET" frequency 12500000 Hz quality 950
+Timecounter "HPET" frequency 12500000 Hz quality 950
+Event timer "HPET" frequency 12500000 Hz quality 450
+Event timer "HPET" frequency 12500000 Hz quality 450
+Event timer "HPET1" frequency 12500000 Hz quality 450
+Event timer "HPET1" frequency 12500000 Hz quality 450
+Event timer "HPET2" frequency 12500000 Hz quality 450
+Event timer "HPET2" frequency 12500000 Hz quality 450
+Event timer "HPET3" frequency 12500000 Hz quality 450
+Event timer "HPET3" frequency 12500000 Hz quality 450
+pci1: pci1: <old, non-VGA display device><old, non-VGA display device> at device 0.1 (no driver attached)
+ at device 0.1 (no driver attached)
+pci1: pci1: <old, non-VGA display device><old, non-VGA display device> at device 0.1 (no driver attached)
+ at device 0.1 (no driver attached)
+pci1: pci1: <old, non-VGA display device><old, non-VGA display device> at device 0.1 (no driver attached)
+ at device 0.1 (no driver attached)
+pci1: pci1: <old, non-VGA display device><old, non-VGA display device> at device 0.1 (no driver attached)
+ at device 0.1 (no driver attached)
+pci0: pci0: <bridge, PCI-ISA><bridge, PCI-ISA> at device 31.0 (no driver attached)
+ at device 31.0 (no driver attached)
+pci0: pci0: <mass storage, SATA><mass storage, SATA> at device 31.2 (no driver attached)
+ at device 31.2 (no driver attached)
+module_register_init: MOD_LOAD (dce, 0xffffffffffffffff, 0xffffffffffffffff) error 6
+module_register_init: MOD_LOAD (dce, 0xffffffffffffffff, 0xffffffffffffffff) error 6
+cpuknob0: cpuknob0: <cpu knob><cpu knob> on cpu0
+ on cpu0
+[MP1ERROR] : init_cpupstate: 0 unexpected did: 0
+[MP1ERROR] : init_cpupstate: 0 unexpected did: 0
+[MP1ERROR] : init_cpupstate: 1 unexpected did: 0
+[MP1ERROR] : init_cpupstate: 1 unexpected did: 0
+[MP1ERROR] : init_cpupstate: 2 unexpected did: 0
+[MP1ERROR] : init_cpupstate: 2 unexpected did: 0
+[MP1ERROR] : init_cpupstate: 3 unexpected did: 0
+[MP1ERROR] : init_cpupstate: 3 unexpected did: 0
+[MP1ERROR] : init_cpupstate: 4 unexpected did: 0
+[MP1ERROR] : init_cpupstate: 4 unexpected did: 0
+[MP1ERROR] : init_cpupstate: 5 unexpected did: 0
+[MP1ERROR] : init_cpupstate: 5 unexpected did: 0
+[MP1ERROR] : init_cpupstate: 6 unexpected did: 0
+[MP1ERROR] : init_cpupstate: 6 unexpected did: 0
+[MP1ERROR] : init_cpupstate: 7 unexpected did: 0
+[MP1ERROR] : init_cpupstate: 7 unexpected did: 0
+[MP1ERROR] : _mp1_bapm_logging_init_intr: MSI allocation error 6
+[MP1ERROR] : _mp1_bapm_logging_init_intr: MSI allocation error 6
+[MP1] Create mp1 dump
+[MP1] Create mp1 dump
+[MP1] Create rlc dump
+[MP1] Create rlc dump
+ERROR: sceSblMp1DumpContext(75) SecReg(MP1 Dump TMR) failed: -37
+ERROR: sceSblMp1DumpContext(75) SecReg(MP1 Dump TMR) failed: -37
+[MP1ERROR] : failed to dump mp1context 46
+[MP1ERROR] : failed to dump mp1context 46
+[MP1ERROR] : mp1fw_diag_timeout: MP1 Timeout msgid=0xF(PPSMC_MSG_QueryGfxclk)
+[MP1ERROR] : mp1fw_diag_timeout: MP1 Timeout msgid=0xF(PPSMC_MSG_QueryGfxclk)
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: MP1_C2PMSG_90: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: MP1_C2PMSG_90: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: MP1_C2PMSG_66: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: MP1_C2PMSG_66: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: MP1_C2PMSG_82: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: MP1_C2PMSG_82: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: MP1_C2PMSG_96: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: MP1_C2PMSG_96: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: MP1_C2PMSG_72: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: MP1_C2PMSG_72: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: MP1_C2PMSG_98: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: MP1_C2PMSG_98: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: MP1_C2PMSG_64: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: MP1_C2PMSG_64: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: MP1_C2PMSG_88: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: MP1_C2PMSG_88: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: MP1_C2PMSG_80: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: MP1_C2PMSG_80: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: MP1_C2PMSG_25: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: MP1_C2PMSG_25: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: MP1_C2PMSG_10: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: MP1_C2PMSG_10: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: MP1_C2PMSG_38: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: MP1_C2PMSG_38: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: MP1_C2PMSG_39: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: MP1_C2PMSG_39: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: MP1_C2PMSG_40: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: MP1_C2PMSG_40: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: MP1_C2PMSG_41: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: MP1_C2PMSG_41: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: MP1_C2PMSG_42: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: MP1_C2PMSG_42: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: MP1_C2PMSG_43: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: MP1_C2PMSG_43: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: MP1_C2PMSG_91: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: MP1_C2PMSG_91: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: MP1_C2PMSG_67: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: MP1_C2PMSG_67: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: MP1_C2PMSG_83: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: MP1_C2PMSG_83: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: MP1_C2PMSG_92: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: MP1_C2PMSG_92: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: MP1_C2PMSG_68: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: MP1_C2PMSG_68: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: MP1_C2PMSG_84: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: MP1_C2PMSG_84: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: MP1_C2PMSG_97: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: MP1_C2PMSG_97: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: MP1_C2PMSG_73: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: MP1_C2PMSG_73: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: MP1_C2PMSG_99: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: MP1_C2PMSG_99: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: RLC_SMU_COMMAND: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: RLC_SMU_COMMAND: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: SMU_RLC_RESPONSE: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: SMU_RLC_RESPONSE: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: RLC_SMU_ARGUMENT_1: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: RLC_SMU_ARGUMENT_1: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: RLC_SMU_ARGUMENT_2: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: RLC_SMU_ARGUMENT_2: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: RLC_SMU_ARGUMENT_3: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: RLC_SMU_ARGUMENT_3: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: RLC_SMU_ARGUMENT_4: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: RLC_SMU_ARGUMENT_4: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: PDEBUGPC: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: PDEBUGPC: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: PDEBUGPC: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: PDEBUGPC: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: PDEBUGPC: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: PDEBUGPC: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: PDEBUGPC: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_mp1_regs: PDEBUGPC: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_CLK_CNTL: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_CLK_CNTL: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_GPM_STAT: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_GPM_STAT: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_CGTT_MGCG_OVERRIDE: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_CGTT_MGCG_OVERRIDE: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_F32_UCODE_VERSION: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_F32_UCODE_VERSION: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_SAFE_MODE: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_SAFE_MODE: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_GPM_DEBUG_INST_ADDR_0: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_GPM_DEBUG_INST_ADDR_0: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_GPM_DEBUG_INST_A_0:    0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_GPM_DEBUG_INST_A_0:    0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_GPM_DEBUG_INST_B_0:    0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_GPM_DEBUG_INST_B_0:    0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_GPM_DEBUG_INST_ADDR_1: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_GPM_DEBUG_INST_ADDR_1: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_GPM_DEBUG_INST_A_1:    0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_GPM_DEBUG_INST_A_1:    0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_GPM_DEBUG_INST_B_1:    0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_GPM_DEBUG_INST_B_1:    0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_GPM_DEBUG_INST_ADDR_2: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_GPM_DEBUG_INST_ADDR_2: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_GPM_DEBUG_INST_A_2:    0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_GPM_DEBUG_INST_A_2:    0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_GPM_DEBUG_INST_B_2:    0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_GPM_DEBUG_INST_B_2:    0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_GPM_DEBUG_INST_ADDR_3: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_GPM_DEBUG_INST_ADDR_3: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_GPM_DEBUG_INST_A_3:    0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_GPM_DEBUG_INST_A_3:    0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_GPM_DEBUG_INST_B_3:    0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_GPM_DEBUG_INST_B_3:    0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_GPM_DEBUG_INST_ADDR_4: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_GPM_DEBUG_INST_ADDR_4: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_GPM_DEBUG_INST_A_4:    0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_GPM_DEBUG_INST_A_4:    0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_GPM_DEBUG_INST_B_4:    0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_GPM_DEBUG_INST_B_4:    0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_GPM_DEBUG_INST_ADDR_5: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_GPM_DEBUG_INST_ADDR_5: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_GPM_DEBUG_INST_A_5:    0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_GPM_DEBUG_INST_A_5:    0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_GPM_DEBUG_INST_B_5:    0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_GPM_DEBUG_INST_B_5:    0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_GPM_DEBUG_INST_ADDR_6: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_GPM_DEBUG_INST_ADDR_6: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_GPM_DEBUG_INST_A_6:    0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_GPM_DEBUG_INST_A_6:    0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_GPM_DEBUG_INST_B_6:    0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_GPM_DEBUG_INST_B_6:    0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_GPM_DEBUG_INST_ADDR_7: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_GPM_DEBUG_INST_ADDR_7: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_GPM_DEBUG_INST_A_7:    0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_GPM_DEBUG_INST_A_7:    0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_GPM_DEBUG_INST_B_7:    0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_GPM_DEBUG_INST_B_7:    0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_GPM_DEBUG_INST_ADDR_8: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_GPM_DEBUG_INST_ADDR_8: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_GPM_DEBUG_INST_A_8:    0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_GPM_DEBUG_INST_A_8:    0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_GPM_DEBUG_INST_B_8:    0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_GPM_DEBUG_INST_B_8:    0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_GPM_DEBUG_INST_ADDR_9: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_GPM_DEBUG_INST_ADDR_9: 0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_GPM_DEBUG_INST_A_9:    0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_GPM_DEBUG_INST_A_9:    0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_GPM_DEBUG_INST_B_9:    0x00000000
+[MP1ERROR] : _mp1_debug_print_st_rlc_regs: RLC_GPM_DEBUG_INST_B_9:    0x00000000
+[MP1ERROR] : mp1fw_sendmsg: Error : busy msgid=0xF, arg=0x00000000
+[MP1ERROR] : mp1fw_sendmsg: Error : busy msgid=0xF, arg=0x00000000
+[MP1ERROR] : mp1_get_clk_from_smu: comp0: ret 16
+[MP1ERROR] : mp1_get_clk_from_smu: comp0: ret 16
+[MP1ERROR] : mp1fw_waitmsg: mp1fw already hangup
+[MP1ERROR] : mp1fw_waitmsg: mp1fw already hangup
+[MP1ERROR] : mp1fw_sendmsg: Error : busy msgid=0xF, arg=0x00000000
+[MP1ERROR] : mp1fw_sendmsg: Error : busy msgid=0xF, arg=0x00000000
+[MP1ERROR] : mp1_get_clk_from_smu: comp0: ret 16
+[MP1ERROR] : mp1_get_clk_from_smu: comp0: ret 16
+[MP1ERROR] : mp1fw_waitmsg: mp1fw already hangup
+[MP1ERROR] : mp1fw_waitmsg: mp1fw already hangup
+[MP1ERROR] : mp1fw_sendmsg: Error : busy msgid=0x1B, arg=0x00000041
+[MP1ERROR] : mp1fw_sendmsg: Error : busy msgid=0x1B, arg=0x00000041
+[MP1ERROR] : mp1fw_waitmsg: mp1fw already hangup
+[MP1ERROR] : mp1fw_waitmsg: mp1fw already hangup
+[MP1ERROR] : mp1fw_sendmsg: Error : busy msgid=0x27, arg=0x00000000
+[MP1ERROR] : mp1fw_sendmsg: Error : busy msgid=0x27, arg=0x00000000
+[MP1ERROR] : _bapm_logging_set_dram_addr: addr high failed 16
+[MP1ERROR] : _bapm_logging_set_dram_addr: addr high failed 16
+[MP1ERROR] : mp1fw_waitmsg: mp1fw already hangup
+[MP1ERROR] : mp1fw_waitmsg: mp1fw already hangup
+[MP1ERROR] : mp1fw_sendmsg: Error : busy msgid=0x28, arg=0x7EB50000
+[MP1ERROR] : mp1fw_sendmsg: Error : busy msgid=0x28, arg=0x7EB50000
+[MP1ERROR] : _bapm_logging_set_dram_addr: addr low failed 16
+[MP1ERROR] : _bapm_logging_set_dram_addr: addr low failed 16
+[MP1ERROR] : mp1fw_waitmsg: mp1fw already hangup
+[MP1ERROR] : mp1fw_waitmsg: mp1fw already hangup
+[MP1ERROR] : mp1fw_sendmsg: Error : busy msgid=0x29, arg=0x00010000
+[MP1ERROR] : mp1fw_sendmsg: Error : busy msgid=0x29, arg=0x00010000
+[MP1ERROR] : _bapm_logging_set_dram_addr: set size failed 16
+[MP1ERROR] : _bapm_logging_set_dram_addr: set size failed 16
+[MP1ERROR] : mp1fw_waitmsg: mp1fw already hangup
+[MP1ERROR] : mp1fw_waitmsg: mp1fw already hangup
+[MP1ERROR] : mp1fw_sendmsg: Error : busy msgid=0x2A, arg=0x83000000
+[MP1ERROR] : mp1fw_sendmsg: Error : busy msgid=0x2A, arg=0x83000000
+[MP1ERROR] : _bapm_logging_start: start logging failed 16
+[MP1ERROR] : _bapm_logging_start: start logging failed 16
+module_register_init: MOD_LOAD (pcist, 0xffffffffffffffff, 0xffffffffffffffff) error 6
+module_register_init: MOD_LOAD (pcist, 0xffffffffffffffff, 0xffffffffffffffff) error 6
+module_register_init: MOD_LOAD (av_control, 0xffffffffffffffff, 0xffffffffffffffff) error 6
+module_register_init: MOD_LOAD (av_control, 0xffffffffffffffff, 0xffffffffffffffff) error 6
+[dbggc_initialize] dbggc for PPR
+[dbggc_initialize] dbggc for PPR
+module_register_init: MOD_LOAD (sbl_sm_service, 0xffffffffffffffff, 0xffffffffffffffff) error 45
+module_register_init: MOD_LOAD (sbl_sm_service, 0xffffffffffffffff, 0xffffffffffffffff) error 45
+_sdma_declare_queue() failed at 268
+_sdma_declare_queue() failed at 268
+_sdma_declare_queue() failed at 268
+_sdma_declare_queue() failed at 268
+_mp4_interaction_setup() finished. Shadowing is disabled
+_mp4_interaction_setup() finished. Shadowing is disabled
+[SCECODECKMD@F0A71732:               0]
+[SCECODECKMD@F0A71732:               0]
+module_register_init: MOD_LOAD (vcn, 0xffffffffffffffff, 0xffffffffffffffff) error 45
+module_register_init: MOD_LOAD (vcn, 0xffffffffffffffff, 0xffffffffffffffff) error 45
+[MP1ERROR] : mp1fw_waitmsg: mp1fw already hangup
+[MP1ERROR] : mp1fw_waitmsg: mp1fw already hangup
+[MP1ERROR] : mp1fw_sendmsg: Error : busy msgid=0x13, arg=0x00000000
+[MP1ERROR] : mp1fw_sendmsg: Error : busy msgid=0x13, arg=0x00000000
+[MP1ERROR] : mp1_get_clk_from_smu: comp22: ret 16
+[MP1ERROR] : mp1_get_clk_from_smu: comp22: ret 16
+[MP1ERROR] : mp1_get_clk_from_cache: FAILED comp=22 ret=-1
+[MP1ERROR] : mp1_get_clk_from_cache: FAILED comp=22 ret=-1
+[BAPM] C0 wc param
+[BAPM] C0 wc param
+Device configuration finished.
+Device configuration finished.
+module_register_init: MOD_LOAD (camera, 0xffffffffffffffff, 0xffffffffffffffff) error 45
+module_register_init: MOD_LOAD (camera, 0xffffffffffffffff, 0xffffffffffffffff) error 45
+acm: <Audio Compute Manager built on Oct 27 2026 02:17:36>
+acm: <Audio Compute Manager built on Oct 27 2026 02:17:36>
+UVFAT_Initialize: exit
+UVFAT_Initialize: exit
+lapic: Divisor 2, Frequency 12500000 Hz
+lapic: Divisor 2, Frequency 12500000 Hz
+Timecounters tick every 1.000 msec
+Timecounters tick every 1.000 msec
+Session ID: Session ID: 0000000000000000000000000000000000000000000000000000000000000000
+
+tcp_init: net.inet.tcp.tcbhashsize auto tuned to 4096
+tcp_init: net.inet.tcp.tcbhashsize auto tuned to 4096
+ipfw2 (+ipv6) initialized, divert loadable, nat enabled, default to accept, logging ipfw2 (+ipv6) initialized, divert loadable, nat enabled, default to accept, logging disabled
+disabled
+md0: Embedded image 7340160 bytes at 0xffffffffffffffff
+md0: Embedded image 7340160 bytes at 0xffffffffffffffff
+g_lvd_init 408 : Layered vnode device is initialized.
+g_lvd_init 408 : Layered vnode device is initialized.
+g_lvd_init 410 : lvd is built at 02:16:16 Oct 27 2026
+g_lvd_init 410 : lvd is built at 02:16:16 Oct 27 2026
+GEOM_SCHEDGEOM_SCHED: : Loading: mp = 0xffffffffffffffff, g_sched_class = 0xffffffffffffffff.Loading: mp = 0xffffffffffffffff, g_sched_class = 0xffffffffffffffff.
+
+fake a53io ctrlr is loaded.
+fake a53io ctrlr is loaded.
+ICC error: not available
+ICC error: not available
+[RTC] ERR: icc_nvs_read 6
+[RTC] ERR: icc_nvs_read 6
+a53io driver is loaded.
+a53io driver is loaded.
+a53io_load: ariel_init_bc() returned: 0x6
+a53io_load: ariel_init_bc() returned: 0x6
+[IOD] Large package support initialized: PageSize:256 KiB,  VPages:16384, BmpSize:2048 Bytes
+[IOD] Large package support initialized: PageSize:256 KiB,  VPages:16384, BmpSize:2048 Bytes
+a53io_mp4_dmamap: a53ring_map_mp4() failed: 6
+a53io_mp4_dmamap: a53ring_map_mp4() failed: 6
+a53io_mp4_dmamap: a53ring_map_mp4() failed: 6
+a53io_mp4_dmamap: a53ring_map_mp4() failed: 6
+a53io write throttling is ready
+a53io write throttling is ready
+bootparam_is_mode_manu=0
+bootparam_is_mode_manu=0
+0(g_scf_buf_sz) < 140000(nvme_phys_queue_area)+100000(log)
+0(g_scf_buf_sz) < 140000(nvme_phys_queue_area)+100000(log)
+ERROR: srtc_create_dev(763) SUBSYS(0x120000) not supported!
+ERROR: srtc_create_dev(763) SUBSYS(0x120000) not supported!
+module_register_init: MOD_LOAD (srtc, 0xffffffffffffffff, 0xffffffffffffffff) error 45
+module_register_init: MOD_LOAD (srtc, 0xffffffffffffffff, 0xffffffffffffffff) error 45
+TSC clock: 1600000000 Hz
+TSC clock: 1600000000 Hz
+TSC timecounter discards lower 7 bit(s)
+TSC timecounter discards lower 7 bit(s)
+Timecounter "TSC-low" frequency 12500000 Hz quality 800
+Timecounter "TSC-low" frequency 12500000 Hz quality 800
+ERROR: sblServiceRequest(103) sceSblDriverSendMsg -37
+ERROR: sblServiceRequest(103) sceSblDriverSendMsg -37
+ERROR: ivmStart(528) SysMail failed: -37
+ERROR: ivmStart(528) SysMail failed: -37
+module_register_init: MOD_LOAD (a53mm, 0xffffffffffffffff, 0xffffffffffffffff) error 16
+module_register_init: MOD_LOAD (a53mm, 0xffffffffffffffff, 0xffffffffffffffff) error 16
+ERROR: sblServiceRequest(103) sceSblDriverSendMsg -37
+ERROR: sblServiceRequest(103) sceSblDriverSendMsg -37
+ERROR: sceSblServiceSpawn(179) sceSblServiceSysMailSend -37
+ERROR: sceSblServiceSpawn(179) sceSblServiceSysMailSend -37
+Trying to mount root from exfatfs:md0 []...
+Trying to mount root from exfatfs:md0 []...
+GEOM: new disk swapdev0
+GEOM: new disk swapdev0
+WARNING: Disk drive swapdev0 has no d_delmaxsize
+WARNING: Disk drive swapdev0 has no d_delmaxsize
+mountroot: unable to unlink symlink (error 2)
+mountroot: unable to unlink symlink (error 2)
+warning: no time-of-day clock registered, system time will not be set accurately
+warning: no time-of-day clock registered, system time will not be set accurately
+start_init: trying /mini-syscore.elf
+start_init: trying /mini-syscore.elf
+
+
+Fatal double fault
+Fatal double fault
+rip = 0xffffffff8045c167
+rip = 0xffffffff8045c167
+rsp = 0xffffff8094dfbf30
+rsp = 0xffffff8094dfbf30
+rbp = 0xffffff8094dfc200
+rbp = 0xffffff8094dfc200
+cpuid = 0; cpuid = 0; apic id = 00
+apic id = 00
+panic: double fault
+panic: double fault

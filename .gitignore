@@ -39,3 +39,7 @@ decomp/
 *.tmp
 .DS_Store
 ._*
+
+# ...except the curated final-run logs kept as evidence
+!evidence/logs/
+!evidence/logs/*.log

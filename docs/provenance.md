@@ -33,9 +33,11 @@ nothing here depends on any such claim being true.
 ## What this repository contains
 
 Documentation and a harness: the boot-chain reconstruction (NASM trampoline and patch tables),
-one worked QEMU device model, the boot and parked-VM scripts, and the static-analysis index
-tooling. Total footprint is well under a megabyte, and the `.gitignore` is written to keep any
-firmware, dump, build output, or boot log out of history permanently.
+one worked QEMU device model, the boot and parked-VM scripts, the static-analysis index tooling,
+and the complete logs of the two documented runs (`evidence/logs/`). Total footprint is well under
+a megabyte. The `.gitignore` keeps firmware, dumps, build output, and regenerated boot logs out of
+history permanently; the only logs committed are the curated evidence runs, which contain kernel
+serial output and harness gate traces — no firmware, keys, or content.
 
 ## What it deliberately excludes
 

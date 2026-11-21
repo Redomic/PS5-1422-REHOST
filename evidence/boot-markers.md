@@ -1,8 +1,22 @@
 # Boot markers
 
-The two lines that define the result, quoted verbatim from the boot log
-(`serial1422s148.log`, the `session148_q35.sh` run). The console driver prints every line twice;
-the duplication below is in the real log and is left as-is.
+The two lines that define the result, quoted verbatim from the boot log. The console driver
+prints every line twice; the duplication in the logs is real and is left as-is.
+
+## The logs
+
+The complete, unedited logs of both runs are in [`logs/`](logs/):
+
+| File | Run | What it shows |
+|---|---|---|
+| `logs/session148-serial.log` | 423-patch marker run | the kernel's own serial output, banner → `Device configuration finished.` (line 533) |
+| `logs/session148-gdbstep.log` | same run | the gates and injects: `BTEXT-HIT`, the `CR3` domain, `P14-GRAFT`, every `SYNTH-HARNESS:` and `*-INJECT:` line |
+| `logs/session157r6-serial.log` | 62-patch pristine run | same marker (line 530) reached with the reduced patch set |
+| `logs/session157r6-gdbstep.log` | same run | the gates for the pristine run |
+
+The `gdbstep` logs are the ones to read if you want to confirm the result is not a trampoline
+fall-through: `BTEXT-HIT: kernel entry 0xffffffff8045a6c0 REACHED (run valid)`, the kernel-domain
+`CR3`, and each synthetic announcing itself. Everything quoted below is drawn from these files.
 
 ## The kernel came up (`BTEXT-HIT`)
 

@@ -74,7 +74,8 @@ PS5-1422-REHOST/
 │   ├── boot/                     the boot + parked-VM harness scripts
 │   └── analysis-index/           the static-analysis index tooling (Ghidra + CSV query helpers)
 └── evidence/
-    └── boot-markers.md           the banner and device-config marker, quoted from the log
+    ├── boot-markers.md           the banner and device-config marker, quoted from the log
+    └── logs/                     the complete unedited logs of both runs (serial + gate/inject trace)
 ```
 
 ## Where to start
