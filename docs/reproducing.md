@@ -77,13 +77,13 @@ built from and the one column of it that must not be trusted.
 
 ```sh
 cd harness/boot
-bash session148_q35.sh
+bash session157r6.sh
 ```
 
 The script assembles the trampoline from `harness/trampoline/`, refuses to boot a stale image
 (it greps the built ELF for signature strings), launches QEMU with your kernel and the modelled
-devices, applies the debugger-side injects, and parks. `session157r6.sh` is the same boot at the
-reduced 62-patch point of the curve.
+devices, applies the debugger-side injects, and parks. This is the baseline 62-patch boot;
+`session148_q35.sh` is an earlier, fuller build kept for reference.
 
 ## 6. What a real boot looks like
 

@@ -4,150 +4,140 @@
 
 **The first publicly documented rehost of a current-generation console kernel on a PC.**
 
-A genuine PlayStation 5 **14.22** kernel, booted under QEMU on commodity AMD hardware with
-**no Sony hypervisor**, to its own `Device configuration finished.` — with every synthetic it
-took to get there *registered, observable, and revertible*.
+A genuine PlayStation 5 **14.22** kernel, booted under QEMU on an ordinary AMD machine with no
+Sony hypervisor, far enough to finish configuring its devices — and a full account of everything
+it took to get there.
 
 ![kernel](https://img.shields.io/badge/kernel-14.22%20r230580-informational)
 ![hypervisor](https://img.shields.io/badge/Sony%20hypervisor-none-success)
 ![qemu](https://img.shields.io/badge/QEMU-8.2.2-blue)
-![patches](https://img.shields.io/badge/kernel%20patches-423%20%E2%86%92%2062-orange)
 ![license](https://img.shields.io/badge/license-MIT-lightgrey)
 
 </div>
 
 ---
 
-The kernel is not emulated. It is the real signed-build kernel (`r230580/releases/14.22`,
-Oct 27 2026), running its own code on a native x86-64 CPU. What this project supplies is the
-*boot chain* a console provides and a PC does not — page tables, memory map, device topology,
-loader environment, hypercall services — each reconstructed from the only specification that
-exists: the kernel's own expectations, read one fault at a time.
+A PlayStation 5 and this PC are closer than they look. Both are x86-64 on AMD; the console's
+kernel is a relative of FreeBSD. What stands between them isn't the processor — it's everything a
+console does *before* the kernel runs. On real hardware a chain of earlier stages hands the kernel
+a fully prepared world: its page tables, a map of memory, a description of the devices, a set of
+boot settings, a hypervisor to call into. On a PC, none of that exists. QEMU gives you a CPU, some
+RAM, and a serial port, and the kernel expects to wake up on a PlayStation.
 
-## The proof
+So this isn't an emulator. The kernel is the real, signed retail build, and it executes its own
+code. The work was to rebuild the world it expects to wake up in — and the kernel itself told us
+what that world should contain, one failed check at a time. Every check it fails is a sentence of
+a specification nobody ever wrote down; satisfy the check with what it was looking for, and the
+kernel's own code carries on. Do that enough times, and it reaches the point where it announces
+its devices are configured and its startup is, in its own terms, complete.
 
-Straight from [`evidence/logs/session148-serial.log`](evidence/logs/session148-serial.log)
-(the kernel's own output; elisions marked, duplicate console lines removed):
+## Seeing it work
+
+Near the end of the boot, the kernel prints its own banner and, a few hundred lines later, the
+line we were after. This is its output, not ours — from
+[`evidence/logs/session157r6-serial.log`](evidence/logs/session157r6-serial.log):
 
 ```console
-PS5-TRAMP-1422: booting KIMUNAKI 14.22 kernel
-PS5-TRAMP-1422: entering long mode -> btext 0xffffffff8045a6c0
-...
 SIE CONFIDENTIAL
 Copyright (C) 2026 Sony Interactive Entertainment Inc.
 ...
 r230580/releases/14.22 Oct 27 2026 02:17:44 amd64
-mDBG: Kernel Build ID = dc496d74ef9d4813
-Memory mode: 1: PPR16  (GDDR6 : 16 GiB, DDR5 : 0 GiB)
 ...
 Device configuration finished.
 ```
 
-And the run is **valid**, not a trampoline falling into memory — the companion
-[`gdbstep`](evidence/logs/session148-gdbstep.log) log records the gate that proves the kernel's
-own entry executed:
+A banner is easy to fake, so the more important question is whether the kernel *really ran*. The
+harness answers that on every boot: it records the exact moment control reaches the kernel's own
+entry point. If that moment never happens, nothing printed afterward can be trusted — a stray jump
+can land in memory and produce convincing nonsense — and the run is thrown out. The complete,
+unedited logs for both documented runs, including that checkpoint and every substitution the boot
+relied on, are in [`evidence/logs/`](evidence/logs/).
 
-```console
-=== BTEXT-HIT: kernel entry 0xffffffff8045a6c0 REACHED (run valid) ===
-```
-
-## The idea, in one diagram
+## What's missing, and what we put in its place
 
 ```mermaid
 flowchart LR
-    subgraph absent [Retail boot chain — absent here]
+    subgraph absent [The console's early boot — none of it runs here]
         direction LR
-        PSP[PSP] --> SBL[Secure bootloader] --> LV1[lv1 hypervisor]
+        PSP[Security processor] --> SBL[Bootloader] --> LV1[Hypervisor]
     end
 
-    subgraph supplied [What this project supplies]
+    subgraph supplied [What this project provides instead]
         direction TB
-        T["Trampoline<br/>page tables · memory map · kenv"]
-        Q["QEMU device models<br/>HPET · PSP mailbox · vmmcall"]
+        T["A small loader<br/>page tables, memory map, boot settings"]
+        Q["Modelled hardware in QEMU<br/>timer, mailbox, hypervisor calls"]
     end
 
-    absent -. "we run none of this" .-> supplied
-    supplied --> K["Genuine 14.22 kernel<br/>runs its own code"]
+    absent -. "replaced by" .-> supplied
+    supplied --> K["The genuine 14.22 kernel,<br/>running its own code"]
     K --> M(["Device configuration finished."])
 ```
 
-Every departure from genuine Sony behaviour needed to stand in for that absent chain is one row in
-the [synthetic register](docs/synthetic-register.md) — address, what it pretends to be, what the
-kernel receives, and the condition under which it is removed. **56 synthetics, all accounted for.**
+Each stand-in is a small, honest lie told to the kernel, and every one of them is written down.
+The [synthetic register](docs/synthetic-register.md) lists them all — what each one pretends to
+be, what the kernel actually receives, and the condition under which it can be removed. None of
+them hides: each announces itself in the boot log, so a run is self-describing rather than
+something you have to take on faith. The kernel reaches its goal standing on **62** such patches,
+the irreducible remainder that stands in for parts of the console QEMU simply cannot be — a secure
+processor and its keys, among others. Most of what a bring-up like this accumulates turns out to
+be unnecessary once you measure what the boot actually touches; how that was pared down to only
+what's genuinely load-bearing is the subject of the [methodology](METHODOLOGY.md).
 
-## From mostly-synthetic toward the kernel's own code
+## What this is, and isn't, claiming
 
-The method — *remove what never runs, model what is, guards aren't inert* — drives the patch count
-down and measures it as a curve. Every step is confirmed by a boot that still prints the marker:
+- **A documented rehost, not a demo.** A current-generation console kernel reaches device-config
+  completion on a PC, and *every* departure from genuine console behaviour is written down with
+  its address and the terms for undoing it. The accounting is as much the point as the boot.
+- **A method other people can use.** Treat each crash as information, supply what the kernel asked
+  for rather than deleting the check, and keep the result honest by proving the kernel really ran.
+  The full approach and the complete toolchain are in [`METHODOLOGY.md`](METHODOLOGY.md).
+- **A research instrument.** Getting this far exercises the kernel's device and driver code under
+  a debugger. Anything found there is reported privately to the vendor and is deliberately not
+  part of this release.
 
-```text
-baseline   423  █████████████████████████   static census
-           413  ████████████████████████▍   removed zero-reference dead stubs
-           106  ██████▎                     removed unreached stubs (only 7 of 324 run)
-            71  ████▏                       removed unreached hypercalls (only 6 of 41 run)
-            65  ███▊                        modelled the 6 reached hypercalls in QEMU
-            62  ███▋                        modelled the PSP mailbox as a QEMU device
-```
-
-**423 → 62 kernel patches, −85%, boot-proven.** The reachability lever collapsed the fear that
-~330 code holes were an irreducible floor — only 7 are genuinely executed. What remains is the
-platform itself: loader plumbing, two absent-crypto refuses no QEMU can satisfy, and the device
-models still to be written. The curve is the publishable claim; the floor is honest, not zero.
-
-## What is claimed
-
-1. **A documented rehost, not a demo.** A current-gen console kernel reaches device-config
-   completion on a PC, and *every* synthetic that made it possible is written down with its
-   address and its revert condition. The accounting is as much the contribution as the boot.
-2. **A reusable method.** The three-move discipline above, measured as a curve — see
-   [`METHODOLOGY.md`](METHODOLOGY.md).
-3. **A security-research harness.** Reaching device-config exercises the kernel's device-init,
-   driver-attach, and parser surface under instrumentation. Any vulnerabilities are handled by
-   private coordinated disclosure and are **not** part of this release.
-
-## Start here
+## Where to start
 
 | If you want to… | Read |
 |---|---|
-| understand *how* it was done and reproduce the approach | [`METHODOLOGY.md`](METHODOLOGY.md) |
-| see exactly *what* was faked, and why it is honest | [`docs/synthetic-register.md`](docs/synthetic-register.md) |
+| understand how it was done and try the approach yourself | [`METHODOLOGY.md`](METHODOLOGY.md) |
+| see exactly what was substituted, and why it's honest | [`docs/synthetic-register.md`](docs/synthetic-register.md) |
 | run it against your own kernel | [`docs/reproducing.md`](docs/reproducing.md) |
-| read the full, unedited run logs | [`evidence/logs/`](evidence/logs/) |
+| read the full, unedited logs | [`evidence/logs/`](evidence/logs/) |
 
-## What is *not* here
+## What you won't find here
 
-By design this repository contains **no firmware**: no kernel or hypervisor image, no raw dump, no
-reconstructed code, no keys, no content. You supply your own legally obtained 14.22 kernel; the
-harness builds around it. Artifact identities and SHA-256 hashes are in
-[`docs/provenance.md`](docs/provenance.md) so a reproduction can be checked without anything
-changing hands. There is no game execution and no path to it.
+No firmware. There is no kernel or hypervisor image, no memory dump, no reconstructed code, no
+keys, and no game content anywhere in this repository. You bring your own, legally obtained, 14.22
+kernel and the harness builds around it; the identities and checksums of the artifacts used are
+listed in [`docs/provenance.md`](docs/provenance.md) so a reproduction can be verified without
+anything changing hands. There is no way to run a game here, and no path toward one.
 
 <details>
 <summary><b>Repository layout</b></summary>
 
 ```
 PS5-1422-REHOST/
-├── METHODOLOGY.md                the method and the complete toolchain
+├── METHODOLOGY.md                the approach and the complete toolchain
 ├── docs/
-│   ├── synthetic-register.md     every synthetic: address, pretense, return, revert condition
-│   ├── reproducing.md            host requirements, build, and run — bring your own kernel
-│   └── provenance.md             artifact identities + hashes, scope, legality, disclosure
+│   ├── synthetic-register.md     every substitution: what it fakes, what it returns, how to undo it
+│   ├── reproducing.md            requirements, build, and run — bring your own kernel
+│   └── provenance.md             artifact identities and checksums, scope, legality, disclosure
 ├── harness/
-│   ├── MANIFEST.md               what each file is, and the exact build + run commands
-│   ├── trampoline/               boot-chain reconstruction (NASM) + patch tables + seam checkers
-│   ├── qemu-device-models/       the modelled platform (worked example: the HPET southbridge)
-│   ├── boot/                     the boot + parked-VM harness scripts
-│   └── analysis-index/           static-analysis index tooling (Ghidra + CSV query helpers)
+│   ├── MANIFEST.md               what each file is, and the exact build and run commands
+│   ├── trampoline/               the loader that rebuilds the kernel's expected world
+│   ├── qemu-device-models/       hardware modelled in QEMU (worked example: the timer)
+│   ├── boot/                     the boot and live-inspection scripts
+│   └── analysis-index/           the static-analysis tooling used to read the kernel
 └── evidence/
-    ├── boot-markers.md           the banner and device-config marker, quoted from the log
-    └── logs/                     complete unedited logs of both runs (serial + gate/inject trace)
+    ├── boot-markers.md           the banner and the finish line, quoted from the log
+    └── logs/                     the complete logs of both runs
 ```
 
 </details>
 
 ## Scope and ethics
 
-This is security research and interoperability work on firmware obtained for that purpose. The
-repository distributes no copyrighted Sony code or keys and enables no piracy — no game execution,
-no content, no path to either. Vulnerability findings are disclosed privately to the vendor, not
-published. Full statement in [`docs/provenance.md`](docs/provenance.md).
+This is security research and interoperability work on firmware obtained for that purpose. It
+distributes no copyrighted code or keys and enables no piracy — there is no game, no content, and
+no path to either. Findings that could affect users are disclosed privately to the vendor rather
+than published. The full statement is in [`docs/provenance.md`](docs/provenance.md).

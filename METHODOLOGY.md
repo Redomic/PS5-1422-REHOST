@@ -91,7 +91,8 @@ is reached-instruction patches: loader and trampoline plumbing that *is* the pla
 absent-crypto refuses that no QEMU can satisfy (the secure processor and its keys), the 7 reached
 holes that need a more complete dump, and the device-refuse guards still awaiting their models.
 The honest floor is not zero — it is "the kernel's own code everywhere the hardware can be
-honestly modelled." The curve itself is the publishable claim.
+honestly modelled." Those 62 patches are the baseline the kernel boots from; the curve is here to
+show the number is a floor arrived at by measurement, not an arbitrary place to stop.
 
 ---
 

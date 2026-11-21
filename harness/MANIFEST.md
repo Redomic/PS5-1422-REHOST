@@ -23,10 +23,10 @@ you do not build it by hand.
 
 | File | Role |
 |---|---|
-| `tramp1422_16g_q35s144.asm` | the trampoline source at the device-config-marker build (423 patches) |
-| `patches_1422_q35s144.inc` | that build's patch table — one entry per synthetic check |
-| `tramp1422_16g_q35s144r6.asm` | the trampoline at the reduced 62-patch point of the curve |
-| `patches_1422_q35s144r6.inc` | the 62-patch table (same boot, most synthetics retired) |
+| `tramp1422_16g_q35s144r6.asm` | the trampoline source for the baseline boot (62 patches) |
+| `patches_1422_q35s144r6.inc` | the 62-patch table — one entry per substitution the boot stands on |
+| `tramp1422_16g_q35s144.asm` | an earlier, fuller build kept for reference (see the methodology's reduction curve) |
+| `patches_1422_q35s144.inc` | that earlier build's patch table |
 | `meta_1422_16g_q35.inc` | the handoff blob: E820 memory map, module metadata, the `kenv` loader environment |
 | `params.inc`, `tramp1422.ld`, `probe.ld` | assembly parameters and linker scripts |
 | `check_graft_seam.py` | structural checker — seams, terminators, no fall-through into out-of-line routines |
@@ -56,15 +56,15 @@ the same method; the HPET model is included in full as the reference for the tec
 
 | File | Role |
 |---|---|
-| `session148_q35.sh` | the boot that reaches `Device configuration finished.` — assembles the trampoline, asserts the image is not stale, launches QEMU, applies the debugger-side injects, enforces the gates |
-| `session157r6.sh` | the same boot at the 62-patch point of the curve |
+| `session157r6.sh` | the baseline boot that reaches `Device configuration finished.` — assembles the trampoline, asserts the image is not stale, launches QEMU, applies the debugger-side injects, enforces the gates |
+| `session148_q35.sh` | an earlier, fuller build kept for reference |
 | `qread.sh` | query a parked VM's memory/registers (one boot, unlimited reads) |
 | `park-stop.sh` | shut a parked VM down cleanly and release the boot lock |
 
 ```sh
 export PS5_KERNEL_RAW=/path/to/kernel_raw_1422.bin
 export QEMU=<qemu-8.2.2>/build/qemu-system-x86_64
-cd boot && bash session148_q35.sh
+cd boot && bash session157r6.sh
 ```
 
 Judge the run by the log, not the exit code: `BTEXT-HIT`, the `CR3-DOMAIN` line, a nonzero

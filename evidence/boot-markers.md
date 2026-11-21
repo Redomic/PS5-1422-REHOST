@@ -9,10 +9,10 @@ The complete, unedited logs of both runs are in [`logs/`](logs/):
 
 | File | Run | What it shows |
 |---|---|---|
-| `logs/session148-serial.log` | 423-patch marker run | the kernel's own serial output, banner → `Device configuration finished.` (line 533) |
-| `logs/session148-gdbstep.log` | same run | the gates and injects: `BTEXT-HIT`, the `CR3` domain, `P14-GRAFT`, every `SYNTH-HARNESS:` and `*-INJECT:` line |
-| `logs/session157r6-serial.log` | 62-patch pristine run | same marker (line 530) reached with the reduced patch set |
-| `logs/session157r6-gdbstep.log` | same run | the gates for the pristine run |
+| `logs/session157r6-serial.log` | baseline (62 patches) | the kernel's own serial output, banner → `Device configuration finished.` (line 530) |
+| `logs/session157r6-gdbstep.log` | same run | the checkpoint and substitutions: `BTEXT-HIT`, the `CR3` domain, every `SYNTH-HARNESS:` and `*-INJECT:` line |
+| `logs/session148-serial.log` | earlier, fuller build | the same banner and marker (line 533), kept for reference |
+| `logs/session148-gdbstep.log` | same run | the gates and injects for that build |
 
 The `gdbstep` logs are the ones to read if you want to confirm the result is not a trampoline
 fall-through: `BTEXT-HIT: kernel entry 0xffffffff8045a6c0 REACHED (run valid)`, the kernel-domain
@@ -48,7 +48,7 @@ the genuine 14.22 image (see [`../docs/provenance.md`](../docs/provenance.md)).
 
 ## Device configuration finished — the Phase goal
 
-Line 533 of the log, after the device-probe loop completes:
+Line 530 of the baseline log, after the device-probe loop completes:
 
 ```
 Device configuration finished.
