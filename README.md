@@ -119,6 +119,16 @@ PS5-1422-REHOST/
 
 </details>
 
+## Credits
+
+Firmware supplied by **KIMUNAKI** ([@iamWitchKing](https://x.com/iamWitchKing)) — the 14.22 kernel
+and hypervisor-service images this entire project rests on. This repository does not distribute
+them; all analysis, patches, and errors are the authors' own.
+
+With thanks to R0nov4, ccclosed, danthespal, the QEMU and FreeBSD projects, and the independent
+reviewers whose refutations kept this record honest. Full details, scope of the credit, and the
+citation line are in [`ACKNOWLEDGEMENTS.md`](ACKNOWLEDGEMENTS.md).
+
 ## Scope and ethics
 
 This is security research and interoperability work on firmware obtained for that purpose. It
