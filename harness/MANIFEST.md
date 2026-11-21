@@ -67,6 +67,12 @@ export QEMU=<qemu-8.2.2>/build/qemu-system-x86_64
 cd boot && bash session157r6.sh
 ```
 
+The script runs from `harness/boot/` and expects three things beside it: `wp3_boot/` (the
+trampoline sources — already a symlink to `../trampoline` in this repository), `coord/` at the repo
+root (the runtime lock — already present), and `bios/` (your QEMU's firmware, which you link once:
+`ln -s <qemu-8.2.2>/pc-bios bios`). Build artifacts and logs are written in place and are
+git-ignored.
+
 Judge the run by the log, not the exit code: `BTEXT-HIT`, the `CR3-DOMAIN` line, a nonzero
 control read, and then the banner and the marker. A run without `BTEXT-HIT` is void.
 

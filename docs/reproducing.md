@@ -5,6 +5,25 @@ legally obtained PS5 14.22 kernel image; everything else is here. The numbers be
 environment the result was produced on — nearby configurations should work, but this is the one
 that is proven.
 
+## Quickstart
+
+On an AMD host with nested virtualization, once you have your own kernel image and have built QEMU
+with the device models (§3):
+
+```sh
+# one-time: point the harness at your QEMU's firmware (it runs QEMU with -L ./bios)
+ln -s <qemu-8.2.2>/pc-bios harness/boot/bios
+
+export PS5_KERNEL_RAW=/path/to/your/kernel_raw_1422.bin
+export QEMU=<qemu-8.2.2>/build/qemu-system-x86_64
+cd harness/boot && bash session157r6.sh
+```
+
+The script's other two needs are already wired in the repository: `harness/boot/wp3_boot` is a
+symlink to the trampoline sources, and `coord/` holds the runtime lock. Then read the log, not the
+exit code: a run is only valid if the `BTEXT-HIT` checkpoint fired (§6). The sections below cover
+each step in full; new terms are in the [glossary](glossary.md).
+
 ## 1. Host
 
 | | |

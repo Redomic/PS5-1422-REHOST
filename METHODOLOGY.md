@@ -13,6 +13,16 @@ console ring, a device topology, hypercall services. We have the kernel. We have
 chain. The work is to reconstruct that contract from the only witness that survives — the
 kernel's own expectations.
 
+**Contents**
+
+1. [The core method](#1-the-core-method) — faults as a specification, "make it exist," and the three moves that reduce a patch to the kernel's own code
+2. [Verification](#2-verification-proving-the-kernel-really-ran) — the gates that separate a real boot from a convincing fake
+3. [The toolchain](#3-the-toolchain) — the cost ladder, static analysis, emulation, the parked VM, the boot harness, and QEMU device modelling
+4. [Operating discipline](#4-operating-discipline) — the rules that keep the method honest
+
+New to the vocabulary (*trampoline*, *synthetic*, *the gate*, *graft*)? See the
+[glossary](docs/glossary.md).
+
 ---
 
 ## 1. The core method
@@ -96,7 +106,7 @@ show the number is a floor arrived at by measurement, not an arbitrary place to 
 
 ---
 
-## 2. Verification — telling "the kernel accepted it" from "we fooled it"
+## 2. Verification: proving the kernel really ran
 
 The seductive metric is "the boot got further." It is the wrong one. A boot that advances *for
 the wrong reason* is debt: it moves the wall, spends a launch, and leaves a synthetic in the
@@ -198,7 +208,7 @@ how a runtime question is asked without re-booting per question.
 
 ```sh
 cd harness/boot
-bash session148_q35.sh                       # boots, then parks (does not kill the VM)
+bash session157r6.sh                         # boots, then parks (does not kill the VM)
 bash qread.sh <env> "x  /8bx 0xffffffff807ad780"   # virtual read (kernel TEXT)
 bash qread.sh <env> "xp /32gx 0x3e08ba0"           # physical read (identity-mapped data)
 bash qread.sh <env> "info registers"
@@ -221,12 +231,12 @@ The hard-won caveats, all documented inline:
 
 ### 3.6 The boot harness itself
 
-`harness/boot/session148_q35.sh` is the run that reaches the device-config marker. It is a single
+`harness/boot/session157r6.sh` is the baseline run that reaches the device-config marker. It is a single
 self-contained script that assembles the trampoline, asserts the image is not stale (it greps the
 built ELF for signature strings and refuses to boot a mismatched one), launches QEMU with the
 kernel and the modelled devices, applies the debugger-side injects, and enforces the gates. The
 scripts are verbose by design: a harness that narrates what it did is a harness whose logs can be
-audited later. `session157r6.sh` is the same harness at the reduced 62-patch point of the curve.
+audited later. `session148_q35.sh` is an earlier, fuller build kept for reference.
 
 ### 3.7 Modelling the platform in QEMU
 

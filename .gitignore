@@ -43,3 +43,6 @@ decomp/
 # ...except the curated final-run logs kept as evidence
 !evidence/logs/
 !evidence/logs/*.log
+
+# local firmware symlink the user creates for the boot script
+harness/boot/bios

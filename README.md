@@ -99,9 +99,11 @@ what's genuinely load-bearing is the subject of the [methodology](METHODOLOGY.md
 
 | If you want to… | Read |
 |---|---|
+| get oriented quickly, or check whether this is for you | [`docs/faq.md`](docs/faq.md) |
 | understand how it was done and try the approach yourself | [`METHODOLOGY.md`](METHODOLOGY.md) |
 | see exactly what was substituted, and why it's honest | [`docs/synthetic-register.md`](docs/synthetic-register.md) |
 | run it against your own kernel | [`docs/reproducing.md`](docs/reproducing.md) |
+| look up an unfamiliar term | [`docs/glossary.md`](docs/glossary.md) |
 | read the full, unedited logs | [`evidence/logs/`](evidence/logs/) |
 
 ## What you won't find here
@@ -119,6 +121,8 @@ anything changing hands. There is no way to run a game here, and no path toward 
 PS5-1422-REHOST/
 ├── METHODOLOGY.md                the approach and the complete toolchain
 ├── docs/
+│   ├── faq.md                    the common questions, answered plainly
+│   ├── glossary.md               the project's vocabulary in plain terms
 │   ├── synthetic-register.md     every substitution: what it fakes, what it returns, how to undo it
 │   ├── reproducing.md            requirements, build, and run — bring your own kernel
 │   └── provenance.md             artifact identities and checksums, scope, legality, disclosure
