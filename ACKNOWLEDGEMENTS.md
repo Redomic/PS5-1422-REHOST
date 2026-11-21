@@ -43,5 +43,5 @@ not about who owns the code.
 
 ## Attribution note
 
-Names are used with permission. Acknowledged parties have not reviewed or endorsed this work
-unless explicitly stated.
+Names are used for identification only. Acknowledged parties have not reviewed or endorsed this
+work unless explicitly stated.
